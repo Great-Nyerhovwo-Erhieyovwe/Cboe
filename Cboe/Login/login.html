@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Log in your account</h2>
+        <form action="" id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address">
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password">
+                <div class="error-message" id="passwordError"></div>
+                <div class="password-strength-indicator">
+                    <div class="stength-bar" id="strengthBar"></div>
+                    <span id="strengthText"></span>
+                </div>
+            </div>
+
+            <div class="form-group remember-me-group">
+                <div class="remember-me">
+                    <input type="radio" id="remember-me" name="remember-me">
+                    <label for="remember-me">Remember me</label>
+                    <div class="error-message" id="rememberError"></div>
+                </div>
+                <div class="forget-password">
+                    <a href="#">Forgot password?</a>
+                </div>
+            </div>
+
+            <button type="submit">Login</button>
+
+            <p id="no-account">Don't have an account?<a href="../Register/register.html"> Register</a></p>
+        </form>
+
+        <!-- Modal Component -->
+         <div id="modal" class="modal">
+            <div class="modal-content">
+                <span id="closeModal">&times;</span>
+                <div id="modalIcon" class="modal-icon" >✔</div>
+                <h3 id="modalTitle"></h3>
+                <p id="modalMessage"></p>
+                <div id="modalSpinner" class="spinner" style="display: none;"></div>
+            </div>
+         </div>
+    </div>
+    <script src="login.js"></script>
+</body>
+</html>

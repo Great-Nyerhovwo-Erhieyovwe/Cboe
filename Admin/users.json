@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "username": "user1",
+        "email": "user1@example.com",
+        "balance": 500,
+        "deposits": [200, 100],
+        "withdrawals": [50],
+        "messages": []
+    },
+    {
+        "id": 2,
+        "username": "user2",
+        "email": "user2@example.com",
+        "balance": 40,
+        "deposits": [10, 30],
+        "withdrawals": [0],
+        "messages": []
+    }
+]

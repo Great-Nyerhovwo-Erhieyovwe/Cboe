@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+    <div class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+    </div>
+
+    <table class="admin-user-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Balance</th>
+                <th>Pending Deposits</th>
+                <th>Pending Withdrawals</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="adminUserTableBody"></tbody>
+    </table>
+
+    <!-- <div class="admin-sections">
+        <div class="admin-card">
+            <h2>Registered Users</h2>
+            <ul id="userList"></ul>
+        </div>
+
+        <div class="admin-card">
+            <h2>Deposit Submission</h2>
+            <ul id="depositList"></ul>
+        </div>
+
+        <div class="admin-card">
+            <h2>Withdrawal Requests</h2>
+            <ul id="withdrawalList"></ul>
+        </div>
+
+        <div class="admin-card">
+            <h2>Send Message or Billing</h2>
+            <form id="adminMessageForm">
+                <select id="targetUser">
+                    <option disabled selected>Select user</option>
+                </select>
+                <textarea id="adminMessage" placeholder="Enter message or billing notice..."></textarea>
+                <button type="submit">Send</button>
+                <p id="messageStatus"></p>
+            </form>
+        </div>
+    </div> -->
+
+    <!-- edit balance modal -->
+    <div class="admin-modal-overlay" id="editBalanceModal">
+        <div class="admin-modal">
+            <h3>Edit Balance for <span id="editUsername"></span></h3>
+            <input type="number" id="newBalanceInput" placeholder="New Balance ($)">
+            <button onclick="saveBalance()">Save</button>
+            <button class="cancel-btn" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Send message modal -->
+    <div class="admin-modal-overlay" id="sendMessageModal">
+        <div class="admin-modal">
+            <h3>Send Message to <span id="messageUsername"></span></h3>
+            <textarea id="adminMessageInput" placeholder="Type your message here..."></textarea>
+            <button onclick="sendMessage()">Send</button>
+            <button class="cancel-btn" onclick="closeModals()">Cancel</button>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cboe - Dashboard</title>
+  <!-- custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- font awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+    integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body class="light-mode">
+  <div id="dashboard-container">
+    <!-- sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h2>Cboe</h2>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#" class="active"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+          <li><a href="market.html"><i class="fa-solid fa-chart-line"></i><span>Market & Pairs</span></a></li>
+          <li><a href="trade.html"><i class="fa-solid fa-money-bill-trend-up"></i><span>Trade</span></a></li>
+          <li><a href="deposit.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Deposit</span></a></li>
+          <li><a href="#"><i class="fas arrow-up"></i><span>Withdraw</span></a></li>
+
+          <!-- <h3>General</h3> -->
+          <li><a href="#"><i class="fa-solid fa-user-gear"></i><span>Settings</span></a></li>
+          <li><a href="support.html"><i class="fa-solid fa-ticket"></i><span>Support</span></a></li>
+          <li><a href="#"><i class="fa-solid fa-arrow-left" id="logoutBtn"></i><span>Logout</span></a></li>
+        </ul>
+      </nav>
+      <!-- theme toggle and register button -->
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="sidebar-btn">
+          <i class="fas fa-moon"></i><span>Toggle Theme</span>
+        </button>
+        <button id="register-btn" class="sidebar-btn register-sidebar-btn">
+          <i class="fa-solid fa-user"></i><span>Profile</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- main content area -->
+    <div id="main-content">
+      <!-- top nav bar -->
+      <header id="navbar">
+        <div class="navbar-left">
+          <button id="sidebar-toggle" class="hamburger-btn">
+            <i class="fas fa-bars"></i>
+          </button>
+          <span class="company-name">Cboe</span>
+        </div>
+
+        <div class="navbar-left">
+          <div id="profile-dropdown" class="profile-container">
+            <div class="profile-info">
+              <span class="user-name">EmmaLex Vwede</span>
+              <img src="" alt="" class="profile-avatar" />
+            </div>
+            <div class="dropdown-menu hidden">
+              <a href="#">Settings</a>
+              <a href="../Login/login.html" id="logoutBtn">Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main id="content">
+        <h3 id="page-title">Dashboard</h3>
+
+        <section class="dashboard-overview">
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-tasks"></i></div>
+            <div class="card-info">
+              <span class="card-title">Account Balance</span>
+              <p><span class="card-value">$12,000.09</span></p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-sticky-note"></i></div>
+            <div class="card-info">
+              <span class="card-title">P/L</span>
+              <p><span class="card-value positive">+ $240.35 (2.1%)</span></p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-users"></i></div>
+            <div class="card-info">
+              <span class="card-title">Analytics</span>
+              <span class="card-value">3</span>
+            </div>
+          </div>
+
+
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-tools"></i></div>
+            <div class="card-info">
+              <span class="card-title">Active/Total Trades</span>
+              <span class="card-value">7</span>
+            </div>
+          </div>
+
+          <div class="card flexible1">
+            <div class="card-icon"><i class="fas fa-users"></i></div>
+            <div class="card-info">
+              <span class="card-title">Transaction History</span>
+              <li><span class="card-value">Deposited</span></li>
+            </div>
+          </div>
+
+          <div class="card flexible2">
+            <!-- <h3 style="text-align: center;">Analytics Chart</h3> -->
+            <canvas id="analyticsChart" height="400"></canvas>
+          </div>
+
+          <div class="card">
+            <!-- <button id="deposit-btn" class="deposit-btn">Deposit</button>
+            <button id="withdraw-btn" class="withdraw-btn">Withdraw</button> -->
+          </div>
+
+          <div class="card flexible3">
+            <!-- <div class="card-icon"><i class="fas fa-users"></i></div> -->
+            <div class="card-info">
+              <span class="card-title">Market Chart (EUR/USD) </span>
+              <div id="tradingview_eurusd" class="tradingview-eurusd"></div>
+            </div>
+          </div>
+
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- mobile overlay -->
+  <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+
+  <!-- chart js cdn-->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>

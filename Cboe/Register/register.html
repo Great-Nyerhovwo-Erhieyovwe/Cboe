@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="register.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Create your account</h2>
+        <form action="" id="registrationForm">
+            <div class="form-group">
+                <label for="fullName">Full Name:</label>
+                <input type="text" id="fullName" name="fullName" placeholder="Enter your full name">
+                <div class="error-message" id="fullNameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="off" required>
+                <small id="usernameFeedback" class="feedback"></small>
+                <ul id="usernameSuggestions" class="suggestions-list"></ul>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address">
+                <div class="error-message" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" placeholder="+xxxxxxxxxxxxx" required>
+                <small id="phoneFeedback" class="feedback"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="accountType">Account Type:</label>
+                <select name="accountType" id="accountType">
+                    <option value="" disabled selected>-- Select Account Type --</option>
+                    <option value="mini">Mini Account</option>
+                    <option value="standard">Standard Account</option>
+                    <option value="platinum">Platinum Account</option>
+                    <option value="premium">Premium Account</option>
+                    <option value="co">Co (Company Investment Account)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="country">Country:</label>
+                <select id="country" required>
+                    <option disabled selected>-- Choose Country --</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="brazil">Brazil</option>
+                    <option value="canada">Canada</option>
+                    <option value="china">China</option>
+                    <option value="germany">Germany</option>
+                    <option value="mexico">Mexico</option>
+                    <option value="uae">United Arab Emirates</option>
+                    <option value="usa">United States</option>
+                    <option value="usa">United Kingdom</option>
+                    <option value="russia">Russia</option>
+                    <option value="south-africa">South-Africa</option>
+                    <option value="India">India</option>
+                    <option value="Philippine">Philippine</option>
+                    <option value="Kazakhstan">Kazakhstan</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Currency:</label>
+                <select id="currency" required>
+                    <option value="currency" disabled selected>-- Choose Currency --</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - British Pound</option>
+                    <option value="JPY">JPY - Japanese Yen</option>
+                    <option value="AUD">AUD - Australian Dollar</option>
+                    <option value="AED">AED - United Arab Emirates Dirham</option>
+                    <option value="CAD">CAD - Canadian Dollar</option>
+                    <option value="CHF">CHF - Swiss Franc</option>
+                    <option value="RUB">RUB - Russian Ruble</option>
+                    <option value="ZAR">ZAR - South African Rand</option>
+                    <option value="INR">INR - Indian Rupee</option>
+                    <option value="MXN">MXN - Mexicon Peso</option>
+                    <option value="PHP">PHP - Philippine Peso</option>
+                    <option value="KZT">KZT - Kazakhstan Tenge</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password">
+                <div class="error-message" id="passwordError"></div>
+                <div class="password-strength-indicator">
+                    <div class="stength-bar" id="strengthBar"></div>
+                    <span id="strengthText"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
+                <div class="error-message" id="confirmPasswordError"></div>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="terms" name="terms">
+                <label for="terms">I agree to the <a href="#">Terms and Conditions</a></label>
+                <div class="error-message" id="termsError"></div>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="agree" name="agree" required>
+                <label for="agree">I confirm that I am 18 years old or older and accept <a href="#">Service
+                        Agreement</a></label>
+                <div class="error-message" id="termsError"></div>
+            </div>
+
+            <button type="submit">Register</button>
+
+            <p id="have-account">Already have an account?<a href="../Login/login.html"> Login</a></p>
+        </form>
+
+        <!-- modal -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p id="modal-message"></p>
+            </div>
+        </div>
+    </div>
+    <script src="register.js"></script>
+</body>
+
+</html>
