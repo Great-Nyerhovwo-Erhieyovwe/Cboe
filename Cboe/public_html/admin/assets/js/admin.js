@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (username === 'admin' && password === 'password123') {
             sessionStorage.setItem('isAdmin', 'true');
-            window.location.href = 'dashboard.html';
+            window.location.href = './dashboard.html';
         } else {
             errorMsg.textContent = 'Invalid credentials!.';
         }

@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBOE Global Market</title>
+    <title>Cboe Global Market | Home</title>
 
     <!-- favicon -->
     <link rel="stylesheet" href="images/traversymedia-favicon.webp">
 
     <!-- custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./assets/css/main.css">
     <!-- google fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +22,14 @@
 </head>
 
 <body>
+    <div id="alertOverlay">
+        <div id="alertBox">
+            <span>Notice: All trades placed and investments are 100% secured so traders should be 100% confident as
+                there will be always success in trade</span>
+            <button onclick="document.getElementById('alertOverlay').style.display='none'"
+                id="closeAlertBtn">&times;</button>
+        </div>
+    </div>
     <!-- infinite scroll -->
     <div class="scrolling-text-container">
         <div class="scrolling-text">
@@ -31,40 +39,41 @@
         </div>
     </div>
 
+
     <!-- nav -->
-     <nav>
+    <nav>
         <div class="logo">Cboe</div>
         <ul class="nav-links" id="navLinks">
-            <li><a href="#home">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#service">Services</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="../Form-Validation/Login/login.html">Login</a></li>
+            <li><a href="#home"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="#cboe"><i class="fas fa-info-circle"></i> About</a></li>
+            <li><a href="#service"><i class="fas fa-cogs"></i> Services</a></li>
+            <li><a href="#contact"><i class="fas fa-phone"></i> Contact</a></li>
+            <li><a href="./login/login.html"><i class="fas fa-user-lock"></i> Login</a></li>
         </ul>
 
         <div class="hamburger" aria-expanded="false" aria-label="Toggle navigation">
             <i class="fas fa-bars"></i>
         </div>
-     </nav>
+    </nav>
 
     <!-- header -->
     <header class="header">
-        <video autoplay muted loop class="header-video">
-            <source src="../Images/main_bg.mp4" type="video/mp4">
+        <video autoplay muted loop playsinline class="header-video">
+            <source src="./assets/images/main_bg.mp4" type="video/mp4">
         </video>
         <div class="text-content">
             <h4 class="text-primary">The Exchange For The World Stage, Empowering Your Financial Future with Smarter
                 Investments....</span></h4> <br> <br>
 
 
-            <h1>Join <span class="text-primary">Cboe Gobal Market</span> - Your Trusted Platform for Forex and Crypto
+            <h1>Join <span class="text-primary">Cboe Global Market</span> - Your Trusted Platform for Forex and Crypto
                 Trading</h1>
             <p>
                 At CBOE, we provide the tools, knowledge, and market access you need to navigate today's dynamic
                 financial landscape. From foundational education to advanced trading and investment solutions, we're
                 here to support your journey every step of the way.
             </p>
-            <a href="../Register/register.html">Get Started Now</a>
+            <a href="./register/register.html">Get Started Now</a>
 
             <div class="boxes">
                 <div class="box">
@@ -95,11 +104,11 @@
     <!-- Image Slider -->
     <div class="slider-container">
         <div class="slider-wrapper">
-            <img src="../Images/above-2000-photo.jpg" alt="Image 1">
-            <img src="../Images/big-russell-photo.jpg" alt="Image 2">
-            <img src="../Images/card-markets-header.jpg" alt="Image 3">
-            <img src="../Images/cash-equities-photo.png" alt="Image 4">
-            <img src="../Images/notable-trades-photo.jpg" alt="Image 5">
+            <img src="./assets/images/above-2000-photo.jpg" alt="Image 1">
+            <img src="./assets/images/big-russell-photo.jpg" alt="Image 2">
+            <img src="./assets/images/card-markets-header.jpg" alt="Image 3">
+            <img src="./assets/images/cash-equities-photo.png" alt="Image 4">
+            <img src="./assets/images/notable-trades-photo.jpg" alt="Image 5">
         </div>
 
         <button class="nav-button prev-button">&#10094;</button> <button
@@ -123,10 +132,10 @@
     <section class="container" id="latest">
         <h2>Why Partner with<span class="text-primary"> CBOE?</span></h2>
         <div class="courses">
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../Images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -136,15 +145,15 @@
                 <p>Traders across the globe trust our platform</p>
                 <p>We connect markets worldwide for seamless trading.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" class="courselogo" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" class="courselogo" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -154,15 +163,15 @@
                 <p>Join a fast-growing community of investors</p>
                 <p>Thousands join us every month to grow their portfolio.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -171,15 +180,15 @@
                 <p><strong>Various deposits options and fast withdrawal of funds. The minimum deposit is only
                         $200.</strong></p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Start Trading Now</a>
+                    <a href="./register/register.html">Start Trading Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -189,15 +198,15 @@
                 <p>Fast and reliable trade execution at scale</p>
                 <p>Our trading engine handles high-frequency orders daily.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" class="courselogo" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" class="courselogo" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -207,15 +216,15 @@
                 <p>Regulatory compliance for safe trading</p>
                 <p>We take your security and data protection seriously.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -226,15 +235,15 @@
                 <p>Thousands trading live at this moment.
                 </p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -244,15 +253,15 @@
                 <p>Reliable infrastructure built for traders</p>
                 <p>Your trades are safe on our stable platform.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -262,15 +271,15 @@
                 <p>Our experts are here whenever you need us</p>
                 <p>Get real-time help via chat, email, or phone.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
 
-            <div class="course">
+            <div class="course zoom-in">
                 <div class="course-hours">
                     <div class="course-logo">
-                        <img src="../images/card-listings-header.jpg" alt="course-logo">
+                        <img src="./assets/images/card-listings-header.jpg" alt="course-logo">
                     </div>
                 </div>
                 <div class="level">
@@ -280,7 +289,7 @@
                 <p>Rated by thousands of happy traders</p>
                 <p>What our users says reflects our commitment to excellence.</p>
                 <div class="cart">
-                    <a href="../Form-Validation/Register/register.html">Get Started Now</a>
+                    <a href="./register/register.html">Get Started Now</a>
                     <i class="fa-solid fa-arrow-right"></i>
                 </div>
             </div>
@@ -288,14 +297,14 @@
     </section>
 
     <!-- join Courses -->
-    <section>
-        <div id="join-courses">
+    <section id="service">
+        <div id="join-courses" class="zoom-in">
             <h2>Start Your Financial Journey with Confidence</h2>
             <p>Explore tailored soluctions for every level - whether you're learning the basics, trading the markets, or
                 Investing for long-term growth, we provide the tools, support, and technology to help you succeed.</p>
 
             <div class="course-card">
-                <div class="card-learn">
+                <div class="card-learn zoom-in">
                     <h4><strong>Learn</strong></h4>
                     <p>KNOWLEDGE TO GET STARTED</p>
                     <ul>
@@ -307,10 +316,10 @@
                         <li><span>✔ </span>Glossary of trading terms & chart basics</li>
                         <li><span>✔ </span>Access to trader community forums</li>
                     </ul>
-                    <button onclick="(location.href='../Register/register.html')">Open Account</button>
+                    <button onclick="(location.href='./register/register.html')">Open Account</button>
                 </div>
 
-                <div class="card-trade">
+                <div class="card-trade zoom-in">
                     <h4><strong>Trade</strong></h4>
                     <p>TAKE YOUR FIRST PROFIT</p>
                     <ul>
@@ -325,10 +334,10 @@
                         </li>
 
                     </ul>
-                    <button onclick="(location.href='../Register/register.html')">Open Account</button>
+                    <button onclick="(location.href='./register/register.html')">Open Account</button>
                 </div>
 
-                <div class="card-invest">
+                <div class="card-invest zoom-in">
                     <h4><strong>Invest</strong></h4>
                     <p>CHOOSE THE BEST PORTFOLIO</p>
                     <ul>
@@ -342,14 +351,14 @@
                         <li><span>✔ </span> Priority Support</p>
                         </li>
                     </ul>
-                    <button onclick="(location.href='../Register/register.html')">Open Account</button>
+                    <button onclick="(location.href='./register/register.html')">Open Account</button>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- account type -->
-    <section id="accounttype-form">
+    <section id="accounttype-form" class="zoom-in">
         <!-- Description -->
         <div class="accounttype-description">
             <p>Choose from a range of investment strategies based on your risk profile and goals.</p>
@@ -385,13 +394,13 @@
 
 
     <!-- about cboe -->
-    <section id="cboe">
+    <section id="cboe" class="zoom-in">
         <h2>What is <span> CBOE Global Markets (Cboe)</span> and what does it offers?</h2>
         <div class="abt-cboe-image">
-            <img src="../Images/cboe_logo_inv_50th-footer.svg" alt="Cboe logo Image">
+            <img src="./assets/images/cboe_logo_inv_50th-footer.svg" alt="Cboe logo Image">
         </div>
         <div class="abt-cboe">
-            <div class="about-cboe">
+            <div class="about-cboe zoom-in">
                 <p>Cboe Global Markets, Inc. (Cboe) is one of the world's largest exchange holding companies, providing
                     cutting-edge trading and investment soluctions across a diverse range of asset classes, including
                     equities, derivatives, FX, and digital assets. </p>
@@ -400,7 +409,7 @@
 
                 <h4><strong>Headquarters: </strong> Chichago, Illinois, USA</h4>
             </div>
-            <div class="what-cboe-does">
+            <div class="what-cboe-does zoom-in">
                 <h2>What <span>Cboe</span> Does:</h2>
                 <ul>
                     <li><strong>Options Trading</strong></li>
@@ -417,10 +426,10 @@
 
     <!-- testiony section -->
     <div class="testimony-container">
-        <div class="testimonial-card jason">
+        <div class="testimonial-card jason zoom-in">
             <div class="testimonial-info">
                 <div class="testimonial-img">
-                    <img src="../Images/above-2000-photo.jpg" alt="">
+                    <img src="./assets/images/above-2000-photo.jpg" alt="">
                 </div>
                 <div class="others">
                     <h4>Jason M.</h4>
@@ -435,10 +444,10 @@
                 </p>
             </div>
         </div>
-        <div class="testimonial-card linda">
+        <div class="testimonial-card linda zoom-in">
             <div class="testimonial-info">
                 <div class="testimonial-img">
-                    <img src="../Images/above-2000-photo.jpg" alt="">
+                    <img src="./assets/images/above-2000-photo.jpg" alt="">
                 </div>
                 <div class="others">
                     <h4>Linda O.</h4>
@@ -452,10 +461,10 @@
                 </p>
             </div>
         </div>
-        <div class="testimonial-card nathan">
+        <div class="testimonial-card nathan zoom-in">
             <div class="testimonial-info">
                 <div class="testimonial-img">
-                    <img src="../Images/above-2000-photo.jpg" alt="">
+                    <img src="./assets/images/above-2000-photo.jpg" alt="">
                 </div>
                 <div class="others">
                     <h4>Nathan R.</h4>
@@ -469,10 +478,10 @@
                 </p>
             </div>
         </div>
-        <div class="testimonial-card emily">
+        <div class="testimonial-card emily zoom-in">
             <div class="testimonial-info">
                 <div class="testimonial-img">
-                    <img src="../Images/above-2000-photo.jpg" alt="">
+                    <img src="./assets/images/above-2000-photo.jpg" alt="">
                 </div>
                 <div class="others">
                     <h4>Emily T.</h4>
@@ -486,10 +495,10 @@
                 </p>
             </div>
         </div>
-        <div class="testimonial-card derek">
+        <div class="testimonial-card derek zoom-in">
             <div class="testimonial-info">
                 <div class="testimonial-img">
-                    <img src="../Images/above-2000-photo.jpg" alt="">
+                    <img src="./assets/images/above-2000-photo.jpg" alt="">
                 </div>
                 <div class="others">
                     <h4>Derek S.</h4>
@@ -506,7 +515,7 @@
     </div>
 
     <!-- FAQ -->
-    <section class="faq">
+    <section class="faq zoom-in">
         <h2>Frequently Asked Questions</h2>
 
         <div class="faq-item">
@@ -514,7 +523,9 @@
                 What is CBOE and how is it related to trading?
             </button>
             <div class="answer">
-                CBOE (Chichago Board Options Exchange) is one of the world's largest options exchanges. It offers a platform where traders can buy and sell derivatives, including options, futures, and products related to global markets.
+                CBOE (Chichago Board Options Exchange) is one of the world's largest options exchanges. It offers a
+                platform where traders can buy and sell derivatives, including options, futures, and products related to
+                global markets.
             </div>
         </div>
 
@@ -524,7 +535,8 @@
                 Can I trade Forex on CBOE?
             </button>
             <div class="answer">
-                Yes, CBOE offers forex-related derivatives such as FX options and futures through CBOE FX and affiliated platforms.
+                Yes, CBOE offers forex-related derivatives such as FX options and futures through CBOE FX and affiliated
+                platforms.
             </div>
         </div>
 
@@ -534,7 +546,8 @@
                 What is Forex trading?
             </button>
             <div class="answer">
-                Forex trading involves the exchange of one currency for another to profit from price movements. It is the largest financial market globally, operating 24/5 with a daily volume of over $6 trillion.
+                Forex trading involves the exchange of one currency for another to profit from price movements. It is
+                the largest financial market globally, operating 24/5 with a daily volume of over $6 trillion.
             </div>
         </div>
 
@@ -544,7 +557,8 @@
                 How do I start trading on CBOE?
             </button>
             <div class="answer">
-                Register for a trading account, Choose an account type that matches your needs and experience in terms of tools, fees and support.
+                Register for a trading account, Choose an account type that matches your needs and experience in terms
+                of tools, fees and support.
             </div>
         </div>
 
@@ -554,7 +568,8 @@
                 Do I need any special experience to get started?
             </button>
             <div class="answer">
-                Not at all. With the right guidance or a relaible signal provider, even beginners can get started easily and follow proven strategies.
+                Not at all. With the right guidance or a relaible signal provider, even beginners can get started easily
+                and follow proven strategies.
             </div>
         </div>
 
@@ -564,7 +579,8 @@
                 Can I earn consistent income through this?
             </button>
             <div class="answer">
-                Yes, many traders generate daily or weekly income by following market trends or copying experienced traders - especially when guided by active trading signals.
+                Yes, many traders generate daily or weekly income by following market trends or copying experienced
+                traders - especially when guided by active trading signals.
             </div>
         </div>
 
@@ -574,7 +590,8 @@
                 Is there any risk involved?
             </button>
             <div class="answer">
-                No, With our proven trading bot and real-time community guidance, every trade is strategically managed to protect your capital and deliver consistent results.
+                No, With our proven trading bot and real-time community guidance, every trade is strategically managed
+                to protect your capital and deliver consistent results.
             </div>
         </div>
 
@@ -584,17 +601,18 @@
                 Is CBOE trading suitable for beginners?
             </button>
             <div class="answer">
-                Yes, No experience is needed. Just signup, follow the bot and community insights, and watch your portfolio grow over time.
+                Yes, No experience is needed. Just signup, follow the bot and community insights, and watch your
+                portfolio grow over time.
             </div>
         </div>
     </section>
 
 
-    <!-- traversy media YouTube  -->
-    <section id="cboe-youtube">
+    <!-- cboe YouTube  -->
+    <section id="cboe-youtube" class="zoom-in">
         <div class="cboemedia-youtube">
             <div class="cboe-youtube-image">
-                <img src="../images/cboe_exchange_footer_logo.png" alt="Cboe Global Market Youtube">
+                <img src="./assets/images/cboe_exchange_footer_logo.png" alt="Cboe Global Market Youtube">
             </div>
             <div class="cboe-on-youtube">
                 <h2>Cboe Global Markets on YouTube</h2>
@@ -618,18 +636,19 @@
         <div class="container">
             <p>&copy;2025 Cboe Global Markets. All Right Reserved</p>
 
-            <div class="traversy-on-sociamedia">
+            <div class="cboe-on-sociamedia">
                 <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
                 <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                <a href="#"><i class="fa-brands fa-tiktok"></i></a>
                 <a href="#"><i class="fa-brands fa-youtube"></i></a>
-                <a href="#"><i class="fa-brands fa-github"></i></a>
-                <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                <a href="#"><i class="fa-brands fa-whatsapp"></i></a>
+                <a href="#"><i class="fa-telegram"></i></a>
             </div>
         </div>
     </footer>
 
 
-    <button id="backToTop">⬆ Back to Top</button>
+    <button id="backToTop"><i class="fa-solid fa-arrow-up"></i> Back to Top</button>
     <!-- js -->
     <!-- <script>
         const toogler = document.querySelector('.toogler');
@@ -664,7 +683,7 @@
         });
     </script>
 
-    <script src="script.js"></script>
+    <script src="./assets/js/main.js"></script>
 </body>
 
 </html>

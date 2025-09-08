@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="login.css">
+    <title>Cboe | Login</title>
+    <link rel="stylesheet" href="../assets/css/login.css">
+     <!-- font awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -19,6 +21,7 @@
             <div class="form-group">
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password">
+                <i id="togglePwd" class="toggle-eye fa-regular fa-eye"></i>
                 <div class="error-message" id="passwordError"></div>
                 <div class="password-strength-indicator">
                     <div class="stength-bar" id="strengthBar"></div>
@@ -39,7 +42,7 @@
 
             <button type="submit">Login</button>
 
-            <p id="no-account">Don't have an account?<a href="../Register/register.html"> Register</a></p>
+            <p id="no-account">Don't have an account?<a href="../register/register.html"> Register</a></p>
         </form>
 
         <!-- Modal Component -->
@@ -53,6 +56,6 @@
             </div>
          </div>
     </div>
-    <script src="login.js"></script>
+    <script src="../assets/js/login.js"></script>
 </body>
 </html>

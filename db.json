@@ -1,0 +1,275 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "fullName": "Test User",
+      "username": "testuser",
+      "email": "test@example.com",
+      "phone": "+1234567890",
+      "password": "12345678",
+      "balance": 10,
+      "roi": 50,
+      "deposits": 2
+    },
+    {
+      "id": "54e4",
+      "fullName": "silver",
+      "username": "silver",
+      "email": "bigsilverfx001@gmail.com",
+      "phone": "09150277271",
+      "password": "Silver@1",
+      "balance": 950,
+      "roi": 25,
+      "deposits": 1
+    },
+    {
+      "id": "afb5",
+      "fullName": "Great",
+      "username": "Great123",
+      "email": "great@gmail.com",
+      "phone": "0684684646",
+      "password": "Great@123",
+      "balance": 110
+    }
+  ],
+  "transactions": [
+    {
+      "id": "1",
+      "userId": 1,
+      "type": "deposit",
+      "amount": 200,
+      "status": "approved",
+      "createdAt": "2025-09-01T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "userId": 1,
+      "type": "withdrawal",
+      "amount": 100,
+      "status": "pending",
+      "createdAt": "2025-09-07T15:30:00Z"
+    },
+    {
+      "id": "3",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-08-15T14:20:00Z"
+    },
+    {
+      "id": "cf66",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-08T17:58:00.224Z"
+    },
+    {
+      "id": "aced",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 500,
+      "status": "approved",
+      "createdAt": "2025-09-08T17:58:40.550Z"
+    },
+    {
+      "id": "e8d2",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 100,
+      "status": "rejected",
+      "createdAt": "2025-09-08T17:59:09.707Z"
+    },
+    {
+      "id": "fcd6",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 1000,
+      "status": "approved",
+      "createdAt": "2025-09-08T17:59:38.775Z"
+    },
+    {
+      "id": "6a0c",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 500,
+      "status": "approved",
+      "createdAt": "2025-09-08T17:59:46.761Z"
+    },
+    {
+      "id": "bf1e",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-09-08T19:19:56.992Z"
+    },
+    {
+      "id": "4cc4",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-09-08T19:20:16.208Z"
+    },
+    {
+      "id": "9602",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 6000,
+      "status": "approved",
+      "createdAt": "2025-09-08T19:20:54.152Z"
+    },
+    {
+      "id": "3291",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-08T19:49:18.681Z"
+    },
+    {
+      "id": "0390",
+      "userId": "afb5",
+      "type": "withdrawal",
+      "amount": 50,
+      "status": "approved",
+      "createdAt": "2025-09-08T19:50:09.483Z"
+    },
+    {
+      "id": "7497",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "rejected",
+      "createdAt": "2025-09-08T20:23:28.956Z"
+    },
+    {
+      "id": "f332",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "rejected",
+      "createdAt": "2025-09-08T20:23:39.089Z"
+    },
+    {
+      "id": "cb8a",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "rejected",
+      "createdAt": "2025-09-08T20:23:48.045Z"
+    },
+    {
+      "id": "44b3",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 1000,
+      "status": "rejected",
+      "createdAt": "2025-09-08T20:24:09.580Z"
+    },
+    {
+      "id": "9d04",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:04:24.271Z"
+    },
+    {
+      "id": "e65e",
+      "userId": "afb5",
+      "type": "withdrawal",
+      "amount": 50,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:05:10.746Z"
+    },
+    {
+      "id": "2dac",
+      "userId": "afb5",
+      "type": "withdrawal",
+      "amount": 70,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:07:49.906Z"
+    },
+    {
+      "id": "f86e",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 500,
+      "status": "rejected",
+      "createdAt": "2025-09-08T21:08:19.599Z"
+    },
+    {
+      "id": "55f9",
+      "userId": "afb5",
+      "type": "withdrawal",
+      "amount": 200,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:08:57.759Z"
+    },
+    {
+      "id": "8006",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:34:02.842Z"
+    },
+    {
+      "id": "3d98",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 1000,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:40:46.007Z"
+    },
+    {
+      "id": "688d",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 50,
+      "status": "rejected",
+      "createdAt": "2025-09-08T21:41:31.905Z"
+    },
+    {
+      "id": "c178",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 200,
+      "status": "approved",
+      "createdAt": "2025-09-08T21:43:31.041Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "userId": 1,
+      "message": "Hello Alice!",
+      "billingAmount": 10,
+      "createdAt": "2025-09-08T12:00:00Z"
+    },
+    {
+      "id": "0c3d",
+      "userId": "afb5",
+      "message": "proceed with your deposit as soon as possible",
+      "billingAmount": 500,
+      "createdAt": "2025-09-08T21:21:53.890Z"
+    },
+    {
+      "id": "fa34",
+      "userId": "54e4",
+      "message": "hello user",
+      "billingAmount": null,
+      "createdAt": "2025-09-08T21:32:33.289Z"
+    },
+    {
+      "id": "cc9a",
+      "userId": "afb5",
+      "message": "hello user",
+      "billingAmount": null,
+      "createdAt": "2025-09-08T21:35:44.508Z"
+    }
+  ]
+}

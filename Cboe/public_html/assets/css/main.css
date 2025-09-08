@@ -1,3 +1,7 @@
+html {
+    scroll-behavior: smooth;
+}
+
 * {
     padding: 0;
     margin: 0;
@@ -10,6 +14,55 @@ body {
     line-height: 1.6;
     background: linear-gradient(to right, lightblue, blue);
     user-select: none;
+}
+
+/* AlertBox for Mobile view only*/
+#alertOverlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: #333;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+#alertBox {
+    width: 90%;
+    position: relative;
+    background: #999;
+    color: #333;
+    font-family: serif;
+    font-size: 24px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    padding: 20px 40px 20px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+}
+
+#alertBox span {
+    flex: 1;
+    font-size: 18px;
+}
+
+#alertBox button {
+    margin-left: 15px;
+    background: transparent;
+    border: none;
+    font-size: 30px;
+    cursor: pointer;
+    color: #555;
+    font-weight: bold;
+    line-height: 1;
+    position: absolute;
+    top: 8px;
+    right: 12px;
 }
 
 /* infinite scroll */
@@ -72,7 +125,7 @@ nav {
     padding: 10px;
     border-radius: 5px;
     list-style-type: none;
-    gap: 20px;
+    gap: 10px;
     z-index: 1000;
 }
 
@@ -154,6 +207,7 @@ h4 {
     transform: translate(-50%, -50%);
     z-index: 1;
     object-fit: cover;
+    pointer-events: none;
     /* overflow: hidden; */
 
     filter: blur(3px);
@@ -341,7 +395,19 @@ header .text-content {
     outline: none;
 }
 
-/* latest courses */
+/* Fade In CSS */
+.zoom-in {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.zoom-in.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Why choose us */
 
 #latest {
     background: linear-gradient(to right, #89f7fe, #66a6ff);
@@ -585,6 +651,10 @@ li span {
 #accounttype-form {
     /* background-color: #333; */
     height: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 #accounttype-form .accounttype-description {
@@ -652,18 +722,7 @@ select {
 }
 
 
-/* freelance mastery */
-#freelance-mastery {
-    background-color: white;
-}
-
-.freelance {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.freelance-img img {
+/* .freelance-img img {
     background-repeat: no-repeat;
     object-fit: contain;
     width: 80%;
@@ -697,7 +756,7 @@ h4 {
     border: none;
     border-radius: 4px;
     margin: 1rem 0 0 5rem;
-}
+} */
 
 /* about cboe */
 #cboe {
@@ -806,6 +865,7 @@ h4 {
     text-align: start;
 }
 
+
 .faq {
     /* background: #c2c8d1; */
     color: white;
@@ -866,7 +926,8 @@ h4 {
     display: none;
     padding: 15px;
     color: #fff;
-    border-top: 1px solid #333;
+    border-top: 2px solid #fff;
+    margin: 0 1rem;
 }
 
 /* brad traversy youtube */
@@ -934,7 +995,8 @@ h4 {
     padding: 30px 0;
     text-align: center;
     border: none;
-    border-radius: 8px;
+    border-top: 1px solid #0072EF;
+    /* border-radius: 8px; */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }

@@ -8,6 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.getElementById('navLinks');
     const icon = hamburger.querySelector('i');
 
+    // Onload Alert
+    window.onload = () => {
+        if (window.innerWidth <= 768) {
+            const alertOverlay = document.getElementById('alertOverlay');
+            alertOverlay.style.display = 'flex';
+
+            // document.getElementById('closeAlertBtn').onclick = () => {
+            //     alertBox.style.display = 'none';
+            // }
+        } else {
+            const alertOverlay = document.getElementById('alertOverlay');
+             alertBox.style.display = 'none';
+        }
+    };
+
     /* Hamburger */
     hamburger.addEventListener('click', () => {
         navLinks.classList.toggle('active');
@@ -144,4 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
     createPaginationDots(); // create dots based on number of images
     updateSliderPosition(); // set initial position (should be 0%)
     startAutoPlay();
+
+    // Zoom In JS
+    const zoomElements = document.querySelectorAll('.zoom-in');
+
+    window.addEventListener('scroll', () => {
+        zoomElements.forEach(zel => {
+            const rect = zel.getBoundingClientRect();
+
+            if (rect.top < window.innerHeight - 30 && rect.bottom > 0) {
+                zel.classList.add('visible');
+            } else {
+                zel.classList.remove('visible');
+            }
+        });
+    });
 });

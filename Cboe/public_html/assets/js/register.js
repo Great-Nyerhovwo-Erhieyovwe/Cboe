@@ -25,23 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const strengthText = document.getElementById('strengthText');
     const psi = document.querySelector('.password-strength-indicator');
 
-    // const user = {
-    //     username, 
-    //     password,
-    //     balance: 0,
-    //     deposits: [],
-    //     withdrawals: [],
-    //     messages: []
-    // };
-
-    // localStorage.setItem(`user_${username}`, JSON.stringify(user));
-
-    // // update all user list
-    // let allUsers = JSON.parse(localStorage.getItem('allUsers')) || [];
-    // if (!allUsers.include(username)) {
-    //     allUsers.push(username);
-    //     localStorage.setItem('allUsers', JSON.stringify(allUsers));
-    // }
 
     // utility function to display error messages
     const displayError = (element, message) => {
@@ -261,46 +244,109 @@ document.addEventListener('DOMContentLoaded', () => {
     termsCheckbox.addEventListener('change', validateTerms);
 
 
-    // form submission handler
-    form.addEventListener('submit', (event) => {
-        event.preventDefault(); // Prevent default form submission
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-        // run all validations
+        // Run all validations
         const isFullNameValid = validateFullName();
         const isEmailValid = validateEmail();
         const isPasswordValid = validatePassword();
         const isConfirmPasswordValid = validateConfirmPassword();
         const isTermsValid = validateTerms();
 
-        // check if all feilds are valid 
         if (isFullNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTermsValid) {
-            modalMessage.textContent = 'Thank you for signing up! You will be redirected to the login page in 3 seconds.';
-            modal.style.display = 'block';
+            // Extract values
+            const fullName = fullNameInput.value.trim();
+            const username = usernameInput.value.trim();
+            const email = emailInput.value.trim();
+            const phone = phoneInput.value.trim();
+            const password = passwordInput.value;
 
-            setTimeout(() => {
-                window.location.href = "../Login/login.html";
-            }, 3000);
+            try {
+                // Check if username or email already exists in db
+                const response = await fetch(`http://172.20.10.4:5000/users?username=${username}&email=${email}`);
+                const existingUsers = await response.json();
 
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
+                const usernameExists = existingUsers.some(user => user.username === username);
+                const emailExists = existingUsers.some(user => user.email === email);
 
-            window.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
+                if (usernameExists || emailExists) {
+                    if (usernameExists) displayError(usernameError, 'Username is already taken.');
+                    if (emailExists) displayError(emailError, 'Email is already registered.');
+                    return;
                 }
-            });
 
+                // If not exists, register new user
+                const newUser = {
+                    fullName,
+                    username,
+                    email,
+                    phone,
+                    password // In real-world apps, never store raw passwords!
+                };
 
-            form.reset();
-            strengthBar.style.width = '0%';
-            strengthText.textContent = '';
-            // clear valid/invalid classes on inputs
-            document.querySelectorAll('input').forEach(input => {
-                input.classList.remove('valid', 'invalid');
-            });
+                const postRes = await fetch(`http://172.20.10.4:5000/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newUser)
+                });
+
+                if (!postRes.ok) {
+                    throw new Error('Failed to register user.');
+                }
+
+                // Show success modal
+                modalMessage.textContent = 'Thank you for signing up! You will be redirected to the login page in 3 seconds.';
+                modal.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = "../login/login.html";
+                }, 3000);
+
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+
+                window.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+
+                form.reset();
+                strengthBar.style.width = '0%';
+                strengthText.textContent = '';
+                document.querySelectorAll('input').forEach(input => {
+                    input.classList.remove('valid', 'invalid');
+                });
+
+            } catch (err) {
+                console.error('Error:', err);
+                modalMessage.textContent = 'An error occurred while registering. Please try again.';
+                modal.style.display = 'block';
+            }
+
         } else {
             modalMessage.textContent = 'Please correct the errors in the form.';
+            modal.style.display = 'block';
         }
     });
+
+
+    /* Eye toggle */
+    // const toggles = document.querySelectorAll('.toggle-eye');
+
+    // toggles.forEach(toggle => {
+    //     toggle.addEventListener('click', () => {
+    //         const inputId = toggle.getAttribute('data-target');
+
+    //         const isPassword = input.type === 'password';
+    //         input.type = isPassword ? 'text' : 'password';
+    //         toggle.classList.toggle('fa-eye', !isPassword);
+    //         toggle.classList.toggle('fa-eye-slash', isPassword);
+    //         toggle.style.color = isPassword ? '#0066cc' : '#666';
+    //     });
+    // });
 });
