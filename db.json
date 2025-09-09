@@ -18,7 +18,7 @@
       "email": "bigsilverfx001@gmail.com",
       "phone": "09150277271",
       "password": "Silver@1",
-      "balance": 950,
+      "balance": 6000,
       "roi": 25,
       "deposits": 1
     },
@@ -29,7 +29,7 @@
       "email": "great@gmail.com",
       "phone": "0684684646",
       "password": "Great@123",
-      "balance": 110
+      "balance": 5000
     }
   ],
   "transactions": [
@@ -240,11 +240,27 @@
       "amount": 200,
       "status": "approved",
       "createdAt": "2025-09-08T21:43:31.041Z"
+    },
+    {
+      "id": "8b59",
+      "userId": "afb5",
+      "type": "deposit",
+      "amount": 4000,
+      "status": "approved",
+      "createdAt": "2025-09-09T08:42:34.857Z"
+    },
+    {
+      "id": "bcda",
+      "userId": "afb5",
+      "type": "withdrawal",
+      "amount": 50000,
+      "status": "approved",
+      "createdAt": "2025-09-09T08:49:07.210Z"
     }
   ],
   "messages": [
     {
-      "id": 1,
+      "id": "1",
       "userId": 1,
       "message": "Hello Alice!",
       "billingAmount": 10,
