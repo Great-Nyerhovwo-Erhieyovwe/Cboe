@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cboe | Settings</title>
+    <!-- custom CSS -->
+    <link rel="stylesheet" href="../assets/css/dashboard.css" />
+    <!-- font awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+        integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body class="light-mode">
+    <div id="dashboard-container">
+        <!-- sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h2>Cboe</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                    <li><a href="market.html"><i class="fa-solid fa-chart-line"></i><span>Market & Pairs</span></a></li>
+                    <li><a href="trade.html"><i class="fa-solid fa-money-bill-trend-up"></i><span>Trade</span></a></li>
+                    <li><a href="deposit.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Deposit</span></a>
+                    </li>
+                    <li><a href="#"><i class="fas arrow-up"></i><span>Withdraw</span></a></li>
+
+                    <!-- <h3>General</h3> -->
+                    <li><a href="#" class="active"><i class="fa-solid fa-user-gear"></i><span>Settings</span></a></li>
+                    <li><a href="support.html"><i class="fa-solid fa-ticket"></i><span>Support</span></a></li>
+                    <li><a href="#"><i class="fa-solid fa-arrow-left" id="logoutBtn"></i><span>Logout</span></a></li>
+                </ul>
+            </nav>
+            <!-- theme toggle and register button -->
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="sidebar-btn">
+                    <i class="fas fa-moon"></i><span>Toggle Theme</span>
+                </button>
+                <button id="profile-btn" class="sidebar-btn profile-sidebar-btn">
+                    <i class="fa-solid fa-user"></i><span>Profile</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- main content area -->
+        <div id="main-content">
+            <!-- top nav bar -->
+            <header id="navbar">
+                <div class="navbar-left">
+                    <button id="sidebar-toggle" class="hamburger-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="company-name">Cboe</span>
+                </div>
+
+                <div class="navbar-left">
+                    <div id="profile-dropdown" class="profile-container">
+                        <div class="profile-info">
+                            <span id="profileName"></span>
+                            <img src="" alt="" class="profile-avatar" />
+                        </div>
+                        <div class="dropdown-menu hidden">
+                            <a href="#">Settings</a>
+                            <a href="../login/login.html" id="logoutBtn">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content">
+                <div id="settings-section">
+                    <h3>Profile Info:</h3>
+                    <div class="profile-photo">
+                        <!-- <img src="../assets/images/big-russell-photo.jpg" alt="profile-photo"> -->
+                        <input type="image">
+                    </div>
+                    <div class="profile-form">
+                        <fieldset>
+                            <legend>Contact Information</legend>
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username">
+                            <label for="fname">First Name:</label>
+                            <input type="text" id="fname" name="fname">
+                            <label for="lname">Last Name:</label>
+                            <input type="text" id="lname" name="lname">
+                            <label for="dob">DOB:</label>
+                            <input type="date" id="dob" name="dob">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email">
+                            <textarea name="bio" id="" cols="30" rows="10" placeholder="Update BIO"
+                                maxlength="100"></textarea>
+
+                            <button type="submit">Update Profile</button>
+                        </fieldset>
+                    </div>
+
+                    <div class="profile-form">
+                        <fieldset>
+                            <legend>Update Password</legend>
+                            <label for="oldpwd">Old password:</label>
+                            <input type="password" name="oldpwd" id="oldpwd" placeholder="Old password">
+                            <label for="newpwd">New Password:</label>
+                            <input type="password" name="newpwd" id="newpwd" placeholder="New password">
+                            <label for="conpwd">Confirm new Password:</label>
+                            <input type="password" name="conpwd" id="conpwd" placeholder="Confirm new password">
+
+                            <button type="submit">Change password</button>
+                        </fieldset>
+                    </div>
+
+                    <div class="delete-acc">
+                        <button>Delete Account</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- mobile overlay -->
+    <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+
+    <script src="../assets/js/dashboard.js"></script>
+</body>
+
+</html>
