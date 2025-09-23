@@ -7,7 +7,7 @@
       "email": "test@example.com",
       "phone": "+1234567890",
       "password": "12345678",
-      "balance": 10,
+      "balance": 160,
       "roi": 50,
       "deposits": 2
     },
@@ -18,9 +18,9 @@
       "email": "bigsilverfx001@gmail.com",
       "phone": "09150277271",
       "password": "Silver@1",
-      "balance": 6000,
+      "balance": 1350,
       "roi": 25,
-      "deposits": 1
+      "deposits": 3
     },
     {
       "id": "afb5",
@@ -29,7 +29,17 @@
       "email": "great@gmail.com",
       "phone": "0684684646",
       "password": "Great@123",
-      "balance": 5000
+      "balance": 866,
+      "deposits": 7
+    },
+    {
+      "id": "6f7b",
+      "fullName": "Benjamin J McMahan",
+      "username": "benjamin",
+      "email": "benjamin@gmail.com",
+      "phone": "0903930943",
+      "password": "Benjamin@1",
+      "balance": 100
     }
   ],
   "transactions": [
@@ -45,7 +55,7 @@
       "id": "2",
       "userId": 1,
       "type": "withdrawal",
-      "amount": 100,
+      "amount": 500,
       "status": "pending",
       "createdAt": "2025-09-07T15:30:00Z"
     },
@@ -256,6 +266,78 @@
       "amount": 50000,
       "status": "approved",
       "createdAt": "2025-09-09T08:49:07.210Z"
+    },
+    {
+      "id": "c4ec",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-17T16:06:25.854Z"
+    },
+    {
+      "id": "98fd",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 400,
+      "status": "rejected",
+      "createdAt": "2025-09-17T16:09:12.465Z"
+    },
+    {
+      "id": "ff04",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 400,
+      "status": "rejected",
+      "createdAt": "2025-09-17T16:09:36.010Z"
+    },
+    {
+      "id": "d17f",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-09-17T16:10:01.601Z"
+    },
+    {
+      "id": "9d3a",
+      "userId": "1",
+      "type": "deposit",
+      "amount": 50,
+      "status": "approved",
+      "createdAt": "2025-09-17T16:13:29.210Z"
+    },
+    {
+      "id": "a97e",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-18T08:55:05.962Z"
+    },
+    {
+      "id": "d2b7",
+      "userId": "54e4",
+      "type": "deposit",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-09-22T10:23:46.966Z"
+    },
+    {
+      "id": "665a",
+      "userId": "54e4",
+      "type": "withdrawal",
+      "amount": 300,
+      "status": "approved",
+      "createdAt": "2025-09-22T10:57:15.399Z"
+    },
+    {
+      "id": "828c",
+      "userId": "6f7b",
+      "type": "deposit",
+      "amount": 100,
+      "status": "approved",
+      "createdAt": "2025-09-22T11:03:10.640Z"
     }
   ],
   "messages": [

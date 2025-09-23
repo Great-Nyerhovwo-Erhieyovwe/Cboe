@@ -1,87 +1,11 @@
+document.addEventListener('DOMContentLoaded', () => {
   const API_USERS = 'http://localhost:5500/users';
   const API_TRANSACTIONS = 'http://localhost:5500/transactions';
   const API_MESSAGES = 'http://localhost:5500/messages';
 
-  // === sidebar & toggle theme ===
-  const dashboardContainer = document.getElementById("dashboard-container");
-  const sidebar = document.getElementById("sidebar");
-  const sidebarToggleBtn = document.getElementById("sidebar-toggle");
-  const hamburgerIcon = document.querySelector("#sidebar-toggle i");
-  const mainContent = document.getElementById("main-content");
-  const mobileOverlay = document.getElementById("mobile-overlay");
-  const themeToggleBtn = document.getElementById("theme-toggle");
-  const themeIcon = document.querySelector("#theme-toggle i");
-  const profileDropdown = document.getElementById("profile-dropdown");
-  const dropdownMenu = profileDropdown.querySelector(".dropdown-menu");
-
-
   const messageContainer = document.getElementById('message-container');
   const usersTableBody = document.querySelector('#users-table tbody');
   const transactionsTableBody = document.querySelector('#transactions-table tbody');
-
-  // Sidebar & Toggle theme 
-
-  const mediaQuery = window.matchMedia("(max-width: 768px)");
-
-  const toggleSidebar = () => {
-    if (mediaQuery.matches) {
-      sidebar.classList.toggle("open");
-      mainContent.classList.toggle("pushed-mobile");
-      mobileOverlay.classList.toggle("visible");
-      sidebarToggleBtn.classList.toggle("is-active");
-    } else {
-      dashboardContainer.classList.toggle("sidebar-collapsed");
-      sidebarToggleBtn.classList.toggle("is-active");
-    }
-
-    if (hamburgerIcon.classList.contains("fa-bars")) {
-      hamburgerIcon.classList.replace("fa-bars", "fa-times");
-    } else {
-      hamburgerIcon.classList.replace("fa-times", "fa-bars");
-    }
-  };
-
-  sidebarToggleBtn.addEventListener("click", toggleSidebar);
-  mobileOverlay.addEventListener("click", toggleSidebar);
-
-  const setInitialSidebarState = () => {
-    if (mediaQuery.matches) {
-      sidebar.classList.remove("open");
-      mainContent.classList.remove("pushed-mobile");
-      mobileOverlay.classList.remove("visible");
-      dashboardContainer.classList.remove("sidebar-collapsed");
-    } else {
-      dashboardContainer.classList.remove("sidebar-collapsed");
-    }
-    hamburgerIcon.classList.remove("fa-times");
-    hamburgerIcon.classList.add("fa-bars");
-    sidebarToggleBtn.classList.remove("is-active");
-  };
-
-  setInitialSidebarState();
-  mediaQuery.addEventListener("change", setInitialSidebarState);
-
-  // --- Theme toggle ---
-  themeToggleBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    if (document.body.classList.contains("dark-mode")) {
-      themeIcon.classList.replace("fa-moon", "fa-sun");
-    } else {
-      themeIcon.classList.replace("fa-sun", "fa-moon");
-    }
-  });
-
-  // --- Profile dropdown ---
-  profileDropdown.addEventListener("click", (e) => {
-    dropdownMenu.classList.toggle("hidden");
-    e.stopPropagation();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!profileDropdown.contains(e.target)) {
-      dropdownMenu.classList.add("hidden");
-    }
-  });
 
   // Modal Elements
   const messageModal = document.createElement('div');
@@ -379,4 +303,4 @@
   }
 
   init();
-
+});

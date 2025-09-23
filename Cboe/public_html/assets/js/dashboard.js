@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // API URLs
-  const API_BASE = "http://172.20.10.4:5000";
+  const API_BASE = "http://localhost:5500";
   const API_USERS = `${API_BASE}/users`;
   const API_TRANSACTIONS = `${API_BASE}/transactions`;
 

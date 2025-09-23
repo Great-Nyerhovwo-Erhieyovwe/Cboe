@@ -40,7 +40,7 @@ loginForm.addEventListener('submit', async function (e) {
 
     try {
         // 🔍 Check credentials from JSON Server
-        const response = await fetch(`http://172.20.10.4:5000/users?email=${encodeURIComponent(email)}&password=${encodeURIComponent(pwd)}`);
+        const response = await fetch(`http://localhost:5500/users?email=${encodeURIComponent(email)}&password=${encodeURIComponent(pwd)}`);
         const users = await response.json();
 
         if (users.length > 0) {

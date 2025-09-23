@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // Check if username or email already exists in db
-                const response = await fetch(`http://172.20.10.4:5000/users?username=${username}&email=${email}`);
+                const response = await fetch(`http://localhost:5500/users?username=${username}&email=${email}`);
                 const existingUsers = await response.json();
 
                 const usernameExists = existingUsers.some(user => user.username === username);
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     password // In real-world apps, never store raw passwords!
                 };
 
-                const postRes = await fetch(`http://172.20.10.4:5000/users`, {
+                const postRes = await fetch(`http://localhost:5500/users`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
