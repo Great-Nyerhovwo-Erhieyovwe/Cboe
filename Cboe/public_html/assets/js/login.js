@@ -54,7 +54,7 @@ loginForm.addEventListener('submit', async function (e) {
             showModal('Login Successful', `Welcome back, ${user.username}! Redirecting to dashboard...`);
 
             setTimeout(() => {
-                window.location.href = "../dashboard/dashboard.html";
+                window.location.href = "/dashboard/dashboard.html";
             }, 2000);
         } else {
             // ❌ Invalid login
