@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Frontend project using JSON Server as backend",
   "scripts": {
-    "api": "json-server --watch db.json --host 0.0.0.0 --port 5500",
     "start": "node server.js"
   },
   "devDependencies": {

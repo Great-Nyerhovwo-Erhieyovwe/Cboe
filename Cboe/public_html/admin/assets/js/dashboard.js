@@ -1,6 +1,6 @@
-  const API_USERS = 'http://localhost:5500/users';
-  const API_TRANSACTIONS = 'http://localhost:5500/transactions';
-  const API_MESSAGES = 'http://localhost:5500/messages';
+  const API_USERS = 'https://cboejsonserver.onrender.com/users';
+  const API_TRANSACTIONS = 'https://cboejsonserver.onrender.com/transactions';
+  const API_MESSAGES = 'https://cboejsonserver.onrender.com/messages';
 
   // === sidebar & toggle theme ===
   const dashboardContainer = document.getElementById("dashboard-container");
