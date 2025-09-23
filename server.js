@@ -15,7 +15,7 @@ app.use('/api', router);
 
 // Catch-all route (optional, for SPA)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'Cboe', 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5500;
