@@ -5,7 +5,7 @@ const jsonServer = require('json-server');
 const app = express();
 
 // server static frontend file from 'public' folder
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'Cboe', 'public')));
 
 // Json server api
 const router = jsonServer.router('db.json');
