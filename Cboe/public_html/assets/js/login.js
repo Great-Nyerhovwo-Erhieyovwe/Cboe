@@ -40,7 +40,7 @@ loginForm.addEventListener('submit', async function (e) {
 
     try {
         // 🔍 Check credentials from JSON Server
-        const response = await fetch(`https://cboejsonserver.onrender.com/users?email=${encodeURIComponent(email)}&password=${encodeURIComponent(pwd)}`);
+        const response = await fetch(`https://cboejsonserver.onrender.com/api/users?email=${encodeURIComponent(email)}&password=${encodeURIComponent(pwd)}`);
         const users = await response.json();
 
         if (users.length > 0) {
