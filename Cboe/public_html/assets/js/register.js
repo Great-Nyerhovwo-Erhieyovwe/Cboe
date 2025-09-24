@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     password // In real-world apps, never store raw passwords!
                 };
 
-                const postRes = await fetch(`https://cboejsonserver.onrender.com/users`, {
+                const postRes = await fetch(`https://cboejsonserver.onrender.com/api/users`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
