@@ -408,100 +408,114 @@ body.dark-mode .card-icon {
 }
 
 
-table {
+/* ====== Table Styling ====== */
+#users-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  background: var(--card-bg, #fff);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.95rem;
+}
+
+#users-table thead {
+  background: var(--sidebar-active-bg, #e5dcc3);
+  color: var(--sidebar-active-text, #4b2e2b);
+  text-align: left;
+}
+
+#users-table th,
+#users-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+#users-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+#users-table tbody tr:hover {
+  background: rgba(0,0,0,0.04);
+  transition: background 0.2s ease;
+}
+
+/* Buttons inside table */
+#users-table button {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#users-table .update-btn {
+  background-color: #007bff;
+  color: #fff;
+}
+#users-table .update-btn:hover {
+  background-color: #0056b3;
+}
+
+#users-table .send-message-btn {
+  background-color: #28a745;
+  color: #fff;
+}
+#users-table .send-message-btn:hover {
+  background-color: #1e7e34;
+}
+
+/* ====== Responsive (Mobile View) ====== */
+@media (max-width: 768px) {
+  #users-table,
+  #users-table thead,
+  #users-table tbody,
+  #users-table th,
+  #users-table td,
+  #users-table tr {
+    display: block;
     width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 30px;
-    background: var(--card-bg);
-    color: var(--text-color);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-}
+  }
 
-thead {
-    color: var(--text-color);
-    border: var(--border-color);
-    background-color: var(--primary-text);
-    gap: 2rem;
-}
+  #users-table thead {
+    display: none; /* hide header on small screens */
+  }
 
-th,
-td {
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 10px 12px;
-    text-align: left;
-}
+  #users-table tr {
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--card-bg, #fff);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
 
-th {
-    background-color: #f4f4f4;
-    font-weight: 600;
-}
-
-input[type="number"] {
-    width: 100px;
-    padding: 5px;
-    margin-right: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-}
-
-button {
-    padding: 6px 12px;
+  #users-table td {
+    padding: 8px 10px;
     border: none;
-    border-radius: 3px;
-    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  #users-table td::before {
+    content: attr(data-label);
     font-weight: 600;
-    transition: background-color 0.3s ease;
-}
+    text-transform: capitalize;
+    flex: 1;
+    color: var(--sidebar-text, #4b2e2b);
+  }
 
-button.update-btn {
-    background-color: #007bff;
-    color: var(--primary-color);
+  #users-table td:last-child {
+    border-bottom: none;
+  }
 }
-
-button.update-btn:hover {
-    background-color: #0056b3;
-}
-
-button.approve-btn {
-    background-color: #28a745;
-    color: white;
-    margin-right: 10px;
-}
-
-button.approve-btn:hover {
-    background-color: #1e7e34;
-}
-
-button.reject-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-button.reject-btn:hover {
-    background-color: #a71d2a;
-}
-
-.message {
-    padding: 12px;
-    margin-bottom: 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    text-align: center;
-}
-
-.message.success {
-    color: #155724;
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
-}
-
-.message.error {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-}
-
 
 /* ========== 📱 Responsive Media Queries ========== */
 
