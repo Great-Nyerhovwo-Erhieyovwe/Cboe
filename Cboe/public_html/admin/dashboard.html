@@ -73,48 +73,46 @@
                 <h3 id="page-title">Admin Dashboard</h3>
 
                 <section class="dashboard-overview">
-                    <div class="card">
-                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
-                        <div class="card-info">
-                            <span class="card-title">Active Users</span>
-                            <p><span class="card-value">0</span></p>
-                        </div>
-                    </div>
+  <div class="card">
+    <div class="card-icon"><i class="fas fa-tasks"></i></div>
+    <div class="card-info">
+      <span class="card-title">Active Users</span>
+      <p><span class="card-value" id="active-users">0</span></p>
+    </div>
+  </div>
 
-                    <div class="card">
-                        <div class="card-icon"><i class="fas fa-sticky-note"></i></div>
-                        <div class="card-info">
-                            <span class="card-title">Verified Users</span>
-                            <p><span class="card-value positive">0</span></p>
-                        </div>
-                    </div>
+  <div class="card">
+    <div class="card-icon"><i class="fas fa-sticky-note"></i></div>
+    <div class="card-info">
+      <span class="card-title">Verified Users</span>
+      <p><span class="card-value positive" id="verified-users">0</span></p>
+    </div>
+  </div>
 
-                    <div class="card">
-                        <div class="card-icon"><i class="fas fa-users"></i></div>
-                        <div class="card-info">
-                            <span class="card-title">Total Users</span>
-                            <span class="card-value">3</span>
-                        </div>
-                    </div>
+  <div class="card">
+    <div class="card-icon"><i class="fas fa-users"></i></div>
+    <div class="card-info">
+      <span class="card-title">Total Users</span>
+      <span class="card-value" id="total-users">0</span>
+    </div>
+  </div>
 
+  <div class="card">
+    <div class="card-icon"><i class="fas fa-tools"></i></div>
+    <div class="card-info">
+      <span class="card-title">Active/Total Trades</span>
+      <span class="card-value" id="active-trades">0</span>
+    </div>
+  </div>
 
-                    <div class="card">
-                        <div class="card-icon"><i class="fas fa-tools"></i></div>
-                        <div class="card-info">
-                            <span class="card-title">Active/Total Trades</span>
-                            <span class="card-value">7</span>
-                        </div>
-                    </div>
-
-                    <div class="card flexible1">
-                        <div class="card-icon"><i class="fas fa-users"></i></div>
-                        <div class="card-info">
-                            <span class="card-title">Transaction History</span>
-                            <li><span class="card-value">No Active transactions yet</span></li>
-                        </div>
-                    </div>
-
-                    <div id="message-container"></div>
+  <div class="card flexible1">
+    <div class="card-icon"><i class="fas fa-users"></i></div>
+    <div class="card-info">
+      <span class="card-title">Transaction History</span>
+      <li><span class="card-value" id="recent-tx">Loading...</span></li>
+    </div>
+  </div>
+</section>
                 </section>
             </main>
         </div>
