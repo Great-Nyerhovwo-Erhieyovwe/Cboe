@@ -375,26 +375,11 @@
     }
   });
   
-  //syncing dashboard cards
-  
-  function updateDashboardSummary() {
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.active).length;
-  const verifiedUsers = users.filter(u => u.verified).length;
 
-  const totalTrades = transactions.length;
-  const activeTrades = transactions.filter(t => t.status === "pending").length;
-
-  document.getElementById("total-users").textContent = totalUsers;
-  document.getElementById("active-users").textContent = activeUsers;
-  document.getElementById("verified-users").textContent = verifiedUsers;
-  document.getElementById("active-trades").textContent = `${activeTrades} / ${totalTrades}`;
-}
 
   async function init() {
   await fetchUsers();
   await fetchTransactions();
-  updateDashboardSummary();
 }
 
   init();
