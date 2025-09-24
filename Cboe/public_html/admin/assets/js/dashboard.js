@@ -24,22 +24,24 @@
   const mediaQuery = window.matchMedia("(max-width: 768px)");
 
   const toggleSidebar = () => {
-    if (mediaQuery.matches) {
-      sidebar.classList.toggle("open");
-      mainContent.classList.toggle("pushed-mobile");
-      mobileOverlay.classList.toggle("visible");
-      sidebarToggleBtn.classList.toggle("is-active");
-    } else {
-      dashboardContainer.classList.toggle("sidebar-collapsed");
-      sidebarToggleBtn.classList.toggle("is-active");
-    }
+  if (mediaQuery.matches) {
+    // mobile
+    dashboardContainer.classList.toggle("sidebar-open");
+    mobileOverlay.classList.toggle("visible");
+    sidebarToggleBtn.classList.toggle("is-active");
+  } else {
+    // desktop
+    dashboardContainer.classList.toggle("sidebar-collapsed");
+    sidebarToggleBtn.classList.toggle("is-active");
+  }
 
-    if (hamburgerIcon.classList.contains("fa-bars")) {
-      hamburgerIcon.classList.replace("fa-bars", "fa-times");
-    } else {
-      hamburgerIcon.classList.replace("fa-times", "fa-bars");
-    }
-  };
+  // Icon logic
+  if (hamburgerIcon.classList.contains("fa-bars")) {
+    hamburgerIcon.classList.replace("fa-bars", "fa-times");
+  } else {
+    hamburgerIcon.classList.replace("fa-times", "fa-bars");
+  }
+};
 
   sidebarToggleBtn.addEventListener("click", toggleSidebar);
   mobileOverlay.addEventListener("click", toggleSidebar);
