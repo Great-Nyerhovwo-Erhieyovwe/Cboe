@@ -94,6 +94,10 @@ body {
     font-size: 0;
 }
 
+#dashboard-container.sidebar-hidden #sidebar {
+  display: none;
+}
+
 #sidebar nav {
     flex-grow: 1;
 }
@@ -386,6 +390,21 @@ body.dark-mode .card-icon {
     font-size: 1.3em;
     font-weight: 600;
     color: var(--text-color);
+}
+
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5); /* dark transparent background */
+  z-index: 999; /* sits above everything except sidebar */
+  display: none; /* hidden by default */
+}
+
+.mobile-overlay.visible {
+  display: block;
 }
 
 
