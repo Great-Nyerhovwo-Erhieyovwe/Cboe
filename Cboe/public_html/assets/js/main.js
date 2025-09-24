@@ -51,6 +51,92 @@ document.addEventListener('DOMContentLoaded', () => {
             hamburger.setAttribute("aria-expanded", false);
         });
     });
+    
+    /* popups */
+const popupQueue = [];
+let isShowingPopup = false;
+
+function queuePopup(message, type = "info") {
+  popupQueue.push({ message, type });
+  if (!isShowingPopup) {
+    showNextPopup();
+  }
+}
+
+function showNextPopup() {
+  if (popupQueue.length === 0) {
+    isShowingPopup = false;
+    return;
+  }
+
+  isShowingPopup = true;
+  const { message, type } = popupQueue.shift();
+
+  const container = document.getElementById("popup-container");
+  const popup = document.createElement("div");
+  popup.className = `popup ${type}`;
+  popup.textContent = message;
+
+  container.appendChild(popup);
+
+  // trigger animation
+  setTimeout(() => popup.classList.add("show"), 50);
+
+  // auto-remove after 4s and show next
+  setTimeout(() => {
+    popup.classList.remove("show");
+    setTimeout(() => {
+      popup.remove();
+      showNextPopup();
+    }, 400);
+  }, 4000);
+}
+
+// === Fake random data ===
+const names = [
+  "Michael", "Sarah", "James", "Emma", "David", "Sophia", "Daniel",
+  "Olivia", "Liam", "Mia", "Noah", "Ava", "Ethan", "Isabella",
+  "Lucas", "Amelia", "Mason", "Charlotte", "Henry", "Grace"
+];
+
+function randomAmount(min = 20, max = 8000) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomTime() {
+  const mins = Math.floor(Math.random() * 59) + 1; // 1–59 minutes
+  const hours = Math.floor(Math.random() * 5) + 1; // 1–5 hours
+  const days = Math.floor(Math.random() * 2) + 1;  // 1–2 days
+
+  const rand = Math.random();
+  if (rand < 0.6) return `${mins} mins ago`;
+  if (rand < 0.9) return `${hours} hours ago`;
+  return `${days} days ago`;
+}
+
+function randomMessage() {
+  const name = names[Math.floor(Math.random() * names.length)];
+  const amount = randomAmount();
+  const time = randomTime();
+
+  if (Math.random() < 0.5) {
+    return { 
+      text: `${name} withdrew $${amount} ${time}`, 
+      type: "error" 
+    };
+  } else {
+    return { 
+      text: `${name} earned $${amount} ${time}`, 
+      type: "success" 
+    };
+  }
+}
+
+// === Generate 100 popups ===
+for (let i = 0; i < 100; i++) {
+  const { text, type } = randomMessage();
+  queuePopup(text, type);
+}
 
     /* back to top */
     const backToTopBtn = document.getElementById('backToTop');
