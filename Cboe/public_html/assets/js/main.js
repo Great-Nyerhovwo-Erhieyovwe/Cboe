@@ -58,7 +58,7 @@ function animateCounters() {
   const counters = document.querySelectorAll('.counter');
   counters.forEach(counter => {
     const target = +counter.getAttribute('data-target');
-    const speed = 200;
+    const speed = 100; // smaller = faster
 
     const updateCount = () => {
       const current = +counter.innerText.replace(/,/g, '');
@@ -76,17 +76,15 @@ function animateCounters() {
   });
 }
 
-// Use IntersectionObserver so counters start only when visible
 document.addEventListener('DOMContentLoaded', () => {
   const countersSection = document.querySelector('.counters');
-
   if (countersSection) {
     const observer = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting) {
         animateCounters();
-        observer.disconnect(); // Run only once
+        observer.disconnect();
       }
-    }, { threshold: 0.5 });
+    }, { threshold: 0 }); // trigger as soon as visible
 
     observer.observe(countersSection);
   }
