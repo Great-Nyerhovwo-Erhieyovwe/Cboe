@@ -408,7 +408,7 @@ body.dark-mode .card-icon {
 }
 
 
-/* ====== Table Styling ====== */
+/* ====== Manage User Table Styling ====== */
 #users-table {
   width: 100%;
   border-collapse: collapse;
@@ -514,6 +514,115 @@ body.dark-mode .card-icon {
 
   #users-table td:last-child {
     border-bottom: none;
+  }
+}
+
+/* ====== Transactions Table Styling ====== */
+#transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  background: var(--card-bg, #fff);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.95rem;
+}
+
+#transactions-table thead {
+  background: var(--sidebar-active-bg, #e5dcc3);
+  color: var(--sidebar-active-text, #4b2e2b);
+  text-align: left;
+}
+
+#transactions-table th,
+#transactions-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+#transactions-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+#transactions-table tbody tr:hover {
+  background: rgba(0,0,0,0.04);
+  transition: background 0.2s ease;
+}
+
+/* Action buttons */
+#transactions-table .approve-btn {
+  background-color: #28a745;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: 5px;
+}
+#transactions-table .approve-btn:hover {
+  background-color: #1e7e34;
+}
+
+#transactions-table .reject-btn {
+  background-color: #dc3545;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+#transactions-table .reject-btn:hover {
+  background-color: #a71d2a;
+}
+
+/* ====== Responsive (Mobile View) ====== */
+@media (max-width: 768px) {
+  #transactions-table,
+  #transactions-table thead,
+  #transactions-table tbody,
+  #transactions-table th,
+  #transactions-table td,
+  #transactions-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  #transactions-table thead {
+    display: none; /* hide headers */
+  }
+
+  #transactions-table tr {
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--card-bg, #fff);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  #transactions-table td {
+    padding: 8px 10px;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  #transactions-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    text-transform: capitalize;
+    flex: 1;
+    color: var(--sidebar-text, #4b2e2b);
   }
 }
 
