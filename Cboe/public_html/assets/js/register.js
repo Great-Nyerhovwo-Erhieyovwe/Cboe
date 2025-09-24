@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // Check if username or email already exists in db
-                const response = await fetch(`https://cboejsonserver.onrender.com/users?username=${username}&email=${email}`);
+                const response = await fetch(`https://cboejsonserver.onrender.com/api/users?username=${username}&email=${email}`);
                 const existingUsers = await response.json();
 
                 const usernameExists = existingUsers.some(user => user.username === username);
