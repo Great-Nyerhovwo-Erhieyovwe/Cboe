@@ -52,6 +52,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+    
+    /* Counter */
+function animateCounters() {
+  const counters = document.querySelectorAll('.counter');
+  counters.forEach(counter => {
+    const target = +counter.getAttribute('data-target');
+    const speed = 200;
+
+    const updateCount = () => {
+      const current = +counter.innerText.replace(/,/g, '');
+      const increment = Math.ceil(target / speed);
+
+      if (current < target) {
+        counter.innerText = (current + increment).toLocaleString();
+        requestAnimationFrame(updateCount);
+      } else {
+        counter.innerText = target.toLocaleString();
+      }
+    };
+
+    updateCount();
+  });
+}
+
+// Use IntersectionObserver so counters start only when visible
+document.addEventListener('DOMContentLoaded', () => {
+  const countersSection = document.querySelector('.counters');
+
+  if (countersSection) {
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        animateCounters();
+        observer.disconnect(); // Run only once
+      }
+    }, { threshold: 0.5 });
+
+    observer.observe(countersSection);
+  }
+});
+
+    
     /* popups */
 const popupQueue = [];
 let isShowingPopup = false;
@@ -88,7 +129,7 @@ function showNextPopup() {
     setTimeout(() => {
       popup.remove();
       showNextPopup();
-    }, 400);
+    }, 800);
   }, 4000);
 }
 
