@@ -408,221 +408,137 @@ body.dark-mode .card-icon {
 }
 
 
-/* ====== Manage User Table Styling ====== */
-#users-table {
+/* ====== Professional Table Styling ====== */
+table {
   width: 100%;
   border-collapse: collapse;
   margin: 20px 0;
   background: var(--card-bg, #fff);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   font-size: 0.95rem;
 }
 
-#users-table thead {
+thead {
   background: var(--sidebar-active-bg, #e5dcc3);
   color: var(--sidebar-active-text, #4b2e2b);
   text-align: left;
 }
 
-#users-table th,
-#users-table td {
-  padding: 12px 15px;
+th,
+td {
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border-color, #ddd);
 }
 
-#users-table th {
+th {
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
 }
 
-#users-table tbody tr:hover {
-  background: rgba(0,0,0,0.04);
+tbody tr:hover {
+  background: rgba(0, 0, 0, 0.04);
   transition: background 0.2s ease;
 }
 
-/* Buttons inside table */
-#users-table button {
+/* ====== Inputs inside table ====== */
+table input[type="number"],
+table input[type="text"] {
   padding: 6px 10px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 5px;
+  font-size: 0.9rem;
+  transition: border 0.2s ease;
+  max-width: 120px;
+}
+
+table input:focus {
+  outline: none;
+  border-color: var(--button-color, #a9745d);
+  box-shadow: 0 0 4px rgba(169,116,93,0.4);
+}
+
+/* ====== Buttons inside table ====== */
+table button {
+  padding: 6px 12px;
   border-radius: 5px;
   border: none;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
-}
-
-#users-table .update-btn {
-  background-color: #007bff;
-  color: #fff;
-}
-#users-table .update-btn:hover {
-  background-color: #0056b3;
-}
-
-#users-table .send-message-btn {
-  background-color: #28a745;
-  color: #fff;
-}
-#users-table .send-message-btn:hover {
-  background-color: #1e7e34;
-}
-
-/* ====== Responsive (Mobile View) ====== */
-@media (max-width: 768px) {
-  #users-table,
-  #users-table thead,
-  #users-table tbody,
-  #users-table th,
-  #users-table td,
-  #users-table tr {
-    display: block;
-    width: 100%;
-  }
-
-  #users-table thead {
-    display: none; /* hide header on small screens */
-  }
-
-  #users-table tr {
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color, #ddd);
-    border-radius: 8px;
-    padding: 10px;
-    background: var(--card-bg, #fff);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-
-  #users-table td {
-    padding: 8px 10px;
-    border: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-  }
-
-  #users-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    text-transform: capitalize;
-    flex: 1;
-    color: var(--sidebar-text, #4b2e2b);
-  }
-
-  #users-table td:last-child {
-    border-bottom: none;
-  }
-}
-
-/* ====== Transactions Table Styling ====== */
-#transactions-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  background: var(--card-bg, #fff);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-radius: 8px;
-  overflow: hidden;
-  font-size: 0.95rem;
-}
-
-#transactions-table thead {
-  background: var(--sidebar-active-bg, #e5dcc3);
-  color: var(--sidebar-active-text, #4b2e2b);
-  text-align: left;
-}
-
-#transactions-table th,
-#transactions-table td {
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--border-color, #ddd);
-}
-
-#transactions-table th {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.5px;
-}
-
-#transactions-table tbody tr:hover {
-  background: rgba(0,0,0,0.04);
   transition: background 0.2s ease;
 }
 
-/* Action buttons */
-#transactions-table .approve-btn {
+button.update-btn {
+  background-color: var(--button-color, #a9745d);
+  color: #fff;
+}
+button.update-btn:hover {
+  background-color: var(--button-hover, #8b5e46);
+}
+
+button.approve-btn {
   background-color: #28a745;
   color: #fff;
-  padding: 6px 10px;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
   margin-right: 5px;
 }
-#transactions-table .approve-btn:hover {
+button.approve-btn:hover {
   background-color: #1e7e34;
 }
 
-#transactions-table .reject-btn {
+button.reject-btn {
   background-color: #dc3545;
   color: #fff;
-  padding: 6px 10px;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
 }
-#transactions-table .reject-btn:hover {
+button.reject-btn:hover {
   background-color: #a71d2a;
 }
 
-/* ====== Responsive (Mobile View) ====== */
+/* ====== Mobile Responsive Table ====== */
 @media (max-width: 768px) {
-  #transactions-table,
-  #transactions-table thead,
-  #transactions-table tbody,
-  #transactions-table th,
-  #transactions-table td,
-  #transactions-table tr {
+  table, thead, tbody, th, td, tr {
     display: block;
     width: 100%;
   }
 
-  #transactions-table thead {
-    display: none; /* hide headers */
+  thead {
+    display: none; /* Hide header on mobile */
   }
 
-  #transactions-table tr {
+  tr {
     margin-bottom: 15px;
     border: 1px solid var(--border-color, #ddd);
     border-radius: 8px;
-    padding: 10px;
+    padding: 12px;
     background: var(--card-bg, #fff);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
 
-  #transactions-table td {
-    padding: 8px 10px;
-    border: none;
+  td {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 8px 10px;
+    border: none;
     font-size: 0.9rem;
   }
 
-  #transactions-table td::before {
+  td:before {
     content: attr(data-label);
     font-weight: 600;
     text-transform: capitalize;
-    flex: 1;
     color: var(--sidebar-text, #4b2e2b);
+    margin-right: 10px;
+    flex: 1;
+  }
+
+  /* Full width inputs on mobile */
+  table input[type="number"],
+  table input[type="text"] {
+    max-width: 100%;
   }
 }
 
