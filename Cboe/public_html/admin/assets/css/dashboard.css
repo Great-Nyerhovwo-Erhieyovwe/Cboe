@@ -483,3 +483,79 @@ button.reject-btn:hover {
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
 }
+
+
+/* ========== 📱 Responsive Media Queries ========== */
+
+/* Large screens (desktops, default styling applies) */
+
+/* Medium screens (tablets, < 1024px) */
+@media (max-width: 1024px) {
+    #dashboard-container {
+        grid-template-columns: var(--sidebar-width-closed) 1fr;
+    }
+
+    .dashboard-overview {
+        grid-template-columns: repeat(2, 1fr);
+        width: 95%;
+    }
+}
+
+/* Small screens (mobile landscape, < 768px) */
+@media (max-width: 768px) {
+    #dashboard-container {
+        grid-template-columns: 1fr; /* Sidebar becomes hidden by default */
+    }
+
+    #sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width-open);
+        z-index: 1000;
+        transition: left 0.3s ease;
+    }
+
+    #dashboard-container.sidebar-open #sidebar {
+        left: 0; /* Slide in when toggled */
+    }
+
+    #navbar {
+        grid-area: unset;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+    }
+
+    .dashboard-overview {
+        grid-template-columns: 1fr; /* Single column */
+        width: 100%;
+    }
+}
+
+/* Extra small screens (mobile portrait, < 480px) */
+@media (max-width: 480px) {
+    .company-name {
+        font-size: 1.2em;
+    }
+
+    .hamburger-btn {
+        font-size: 1.2em;
+    }
+
+    .dashboard-overview {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .card {
+        padding: 15px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .card-icon {
+        font-size: 2em;
+    }
+}
