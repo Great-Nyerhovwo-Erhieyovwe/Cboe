@@ -378,29 +378,17 @@
   //syncing dashboard cards
   
   function updateDashboardSummary() {
-  // Active Users (example: users with balance > 0)
-  const activeCount = users.filter(u => Number(u.balance) > 0).length;
-  document.getElementById('active-users').textContent = activeCount;
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.active).length;
+  const verifiedUsers = users.filter(u => u.verified).length;
 
-  // Verified Users (if you have a "verified" flag)
-  const verifiedCount = users.filter(u => u.verified).length;
-  document.getElementById('verified-users').textContent = verifiedCount;
+  const totalTrades = transactions.length;
+  const activeTrades = transactions.filter(t => t.status === "pending").length;
 
-  // Total Users
-  document.getElementById('total-users').textContent = users.length;
-
-  // Active/Total Trades
-  const activeTx = transactions.filter(tx => tx.status === 'pending').length;
-  document.getElementById('active-trades').textContent = `${activeTx}/${transactions.length}`;
-
-  // Transaction History (last transaction message)
-  if (transactions.length > 0) {
-    const lastTx = transactions[transactions.length - 1];
-    document.getElementById('recent-tx').textContent =
-      `${lastTx.type} of $${Number(lastTx.amount).toFixed(2)} (${lastTx.status})`;
-  } else {
-    document.getElementById('recent-tx').textContent = 'No Active transactions yet';
-  }
+  document.getElementById("total-users").textContent = totalUsers;
+  document.getElementById("active-users").textContent = activeUsers;
+  document.getElementById("verified-users").textContent = verifiedUsers;
+  document.getElementById("active-trades").textContent = `${activeTrades} / ${totalTrades}`;
 }
 
   async function init() {
