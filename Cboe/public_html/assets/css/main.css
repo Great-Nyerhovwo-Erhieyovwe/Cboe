@@ -1,3 +1,15 @@
+/* ===== iOS 26 GLASSMORPHISM FOUNDATION ===== */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-strong: rgba(255, 255, 255, 0.25);
+  --text-primary: white;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --accent: #007AFF;
+  --accent-vibrant: #64D2FF;
+  --surface: rgba(0, 0, 0, 0.2);
+}
+
 html {
     scroll-behavior: smooth;
 }
@@ -10,19 +22,19 @@ html {
 
 body {
     font-size: 16px;
-    font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Poppins", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Poppins", sans-serif;
     line-height: 1.6;
-    background: linear-gradient(135deg, #007AFF, #5E5CE6, #FF2D55);
-    background-size: 300% 300%;
-    animation: gradientBG 12s ease infinite;
-    color: white;
+    background: linear-gradient(120deg, #007AFF, #5E5CE6, #FF2D55);
+    background-size: 200% 200%;
+    animation: bgMove 18s ease infinite;
+    color: var(--text-primary);
     user-select: none;
+    min-height: 100vh;
 }
 
-@keyframes gradientBG {
-    0% { background-position: 0% 50%; }
+@keyframes bgMove {
+    0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
 }
 
 /* AlertBox for Mobile view only*/
@@ -42,15 +54,15 @@ body {
 #alertBox {
     width: 90%;
     position: relative;
-    background: rgba(255, 255, 255, 0.12);
-    color: white;
-    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     font-size: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 20px 40px 20px 20px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     max-width: 400px;
     display: flex;
     align-items: center;
@@ -59,6 +71,7 @@ body {
 #alertBox span {
     flex: 1;
     font-size: 17px;
+    color: var(--text-primary);
 }
 
 #alertBox button {
@@ -67,7 +80,7 @@ body {
     border: none;
     font-size: 28px;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-secondary);
     font-weight: bold;
     line-height: 1;
     position: absolute;
@@ -113,10 +126,10 @@ nav {
     padding: 16px 20px;
     color: white;
     position: relative;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .logo {
@@ -131,20 +144,21 @@ nav {
     justify-content: center;
     align-items: center;
     position: fixed;
-    background: rgba(10, 10, 30, 0.85);
+    background: rgba(0, 0, 0, 0.85);
     top: 0;
     right: 0;
     width: 100vw;
-    height: 99vh;
-    padding: 10px;
-    border-radius: 5px;
+    height: 100vh;
+    padding: 80px 20px 40px;
+    border-radius: 0;
     list-style-type: none;
-    gap: 10px;
+    gap: 24px;
     z-index: 1000;
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    /* Remove glass effects */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
 }
-
 
 .nav-links.active {
     display: flex;
@@ -153,15 +167,18 @@ nav {
 .nav-links a {
     text-decoration: none;
     color: white;
-    font-size: 1rem;
+    font-size: 1.4rem;
     font-weight: 600;
+    padding: 14px 24px;
+    width: 100%;
+    text-align: center;
+    border-radius: 16px;
+    background: transparent;
+    transition: background 0.2s ease;
 }
 
 .nav-links a:hover {
-    background-color: rgba(100, 210, 255, 0.3);
-    padding: 8px 15px;
-    border-radius: 14px;
-    transition: background-color 0.3s ease;
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .hamburger {
@@ -176,18 +193,18 @@ nav {
 
 .text-primary {
     /* color: #3195FF; */
-    color: #64D2FF;
+    color: var(--accent-vibrant);
 }
 
 h1 {
     font-size: 36px;
-    color: white;
+    color: var(--text-primary);
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 h4 {
     font-size: 20px;
-    color: white;
+    color: var(--text-primary);
 }
 
 .space {
@@ -270,16 +287,16 @@ video {
     /* background: linear-gradient(to right, lightblue, blue); */
     color: white;
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--glass-border);
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
 }
 
 .header p {
     margin-bottom: 1.2rem;
     padding: 1rem;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--text-secondary);
 }
 
 /* header::before {
@@ -340,7 +357,7 @@ header .text-content {
     cursor: pointer;
     z-index: 10;
     border-radius: 50%;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
     user-select: none;
     transition: background-color 0.3s ease;
 }
@@ -395,12 +412,12 @@ header .text-content {
 #newsletter button {
     padding: 0.8rem 1.4rem;
     /* background:linear-gradient(to right, lightblue, blue); */
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-strong);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--glass-border);
     font-weight: 600;
     border-radius: 14px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 #newsletter input {
@@ -410,21 +427,21 @@ header .text-content {
     padding: 1rem 1.2rem;
     width: 85%;
     max-width: 500px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border);
     border-radius: 14px;
     font-size: 16px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 #newsletter input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-secondary);
 }
 
 #newsletter input:focus-visible,
 #newsletter input:focus {
-    outline: 2px solid rgba(100, 210, 255, 0.6);
+    outline: 2px solid var(--accent);
     border-color: transparent;
 }
 
@@ -449,6 +466,7 @@ header .text-content {
     padding-top: 2.5rem;
     /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); */
     transition: box-shadow 0.3s ease;
+    background: transparent !important;
 }
 
 #latest h2 {
@@ -463,14 +481,14 @@ header .text-content {
     margin-bottom: 1.4rem;
     padding: 1.4rem;
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
 }
 
 .course:hover {
     transform: translateY(-6px);
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.16);
 }
 
 .course-hours {
@@ -502,20 +520,20 @@ header .text-content {
 }
 
 .level {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
 }
 
 .cart {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
 }
 
 .cart a {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-decoration: none;
 }
 
 .cart i {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     margin-right: 0.7rem;
 }
 
@@ -534,6 +552,7 @@ header .text-content {
     justify-content: center;
     gap: 10px;
     padding-top: 2.5rem;
+    background: transparent !important;
 }
 
 #join-courses h2 {
@@ -556,27 +575,27 @@ header .text-content {
     /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); */
     margin-bottom: 1.6rem;
     padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
 }
 
 .card-learn strong {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: center;
     font-size: 30px;
 }
 
 .card-learn h4 {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: center;
     margin-top: 0.5rem;
     margin-bottom: 1rem;
 }
 
 .card-learn ul {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
     padding: 0.5rem;
 }
 
@@ -587,7 +606,7 @@ header .text-content {
 }
 
 li span {
-    color: #FF6B6B;
+    color: #FF453A;
     margin-right: 0.8rem;
 }
 
@@ -599,27 +618,27 @@ li span {
     /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); */
     margin-bottom: 1.6rem;
     padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
 }
 
 .card-trade strong {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: center;
     font-size: 30px;
 }
 
 .card-trade h4 {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: center;
     margin-top: 0.5rem;
     margin-bottom: 1rem;
 }
 
 .card-trade ul {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
     padding: 0.5rem;
     /* list-style-type: none; */
 }
@@ -631,7 +650,7 @@ li span {
 }
 
 .card-trade li span {
-    color: #FF6B6B;
+    color: #FF453A;
     margin-right: 0.8rem;
 }
 
@@ -643,14 +662,14 @@ li span {
     /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); */
     margin-bottom: 1.6rem;
     padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
 }
 
 .card-invest strong {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: center;
     font-size: 30px;
     font-weight: bold;
@@ -665,7 +684,7 @@ li span {
 }
 
 .card-invest ul {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
     padding: 0.5rem;
 }
 
@@ -676,22 +695,22 @@ li span {
 }
 
 .card-invest li span {
-    color: #FF6B6B;
+    color: #FF453A;
     margin-right: 0.8rem;
 }
 
 
 #join-courses button {
     color: white;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--glass-strong);
     /* background: linear-gradient(to right, lightblue, blue); */
     font-weight: bold;
     margin-left: 3rem;
     /* margin: 1rem 0 0 8rem; */
     padding: 14px 28px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border);
     border-radius: 14px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 /* accout type homepage */
@@ -704,6 +723,7 @@ li span {
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    background: transparent !important;
 }
 
 #accounttype-form .accounttype-description {
@@ -716,9 +736,9 @@ li span {
     /* margin: 2rem auto; */
     margin-bottom: 1.4rem;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
 }
 
 .dd-form {
@@ -726,10 +746,10 @@ li span {
     /* background: linear-gradient(to right, red, black); */
     padding: 24px;
     margin: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--glass-border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
@@ -747,7 +767,7 @@ label {
 
 label i {
     margin-right: 8px;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
 }
 
 select {
@@ -755,24 +775,24 @@ select {
     padding: 12px 14px;
     border-radius: 12px;
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border);
     font-size: 16px;
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 .dd-form button {
     width: 100%;
     padding: 14px;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--glass-strong);
     /* background: linear-gradient(to right, lightblue, blue); */
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border);
     color: white;
     font-size: 16px;
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 
@@ -818,10 +838,11 @@ h4 {
     color: white;
     padding: 15px;
     /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); */
+    background: transparent !important;
 }
 
 #cboe span {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
 }
 
 .abt-cboe-image {
@@ -845,13 +866,13 @@ h4 {
     margin: 1.4rem;
     padding: 2rem;
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
 }
 
 .about-cboe p {
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--text-secondary);
     font-weight: 500;
     padding: 1rem 1rem;
     text-align: center;
@@ -863,7 +884,7 @@ h4 {
 }
 
 .about-cboe strong {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
 }
 
 .what-cboe-does {
@@ -872,9 +893,9 @@ h4 {
     margin: 1.4rem;
     padding: 2rem;
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
 }
 
 .what-cboe-does ul {
@@ -893,6 +914,7 @@ h4 {
     padding: 1.5rem;
     grid-gap: 20px;
     /* background: linear-gradient(360deg, #89f7fe, #66a6ff); */
+    background: transparent !important;
 }
 
 .testimonial-card {
@@ -901,9 +923,9 @@ h4 {
     /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); */
     padding: 1.6rem;
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
 }
 
 .testimonial-info {
@@ -919,16 +941,16 @@ h4 {
     height: 50px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid var(--glass-border);
 }
 
 .others p {
     font-weight: lighter;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-secondary);
 }
 
 .others h4 {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
     text-align: start;
 }
 
@@ -936,11 +958,12 @@ h4 {
 .faq {
     /* background: #c2c8d1; */
     color: white;
-    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     margin: 0;
     padding: 20px;
     max-width: 500px;
     margin: 20px auto;
+    background: transparent !important;
 }
 
 .faq h2 {
@@ -952,10 +975,11 @@ h4 {
 .faq-item {
     margin-bottom: 12px;
     /* background: linear-gradient(to right, red, black); */
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass-bg);
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px);
 }
 
 .question {
@@ -993,8 +1017,8 @@ h4 {
 .answer {
     display: none;
     padding: 15px;
-    color: rgba(255, 255, 255, 0.9);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border-top: 1px solid var(--glass-border);
     margin: 0 1rem;
 }
 
@@ -1004,6 +1028,7 @@ h4 {
     color: white;
     padding-bottom: 2.5rem;
     text-align: center;
+    background: transparent !important;
 }
 
 .cboe-youtube-image img {
@@ -1022,13 +1047,13 @@ h4 {
 
 .cboe-on-youtube button {
     color: white;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-strong);
     font-weight: bold;
     padding: 0.8rem 2rem;
     margin-top: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--glass-border);
     border-radius: 14px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
 }
 
 /* crash courses */
@@ -1038,6 +1063,7 @@ h4 {
     text-align: center;
     padding: 2rem 0;
     /* margin: 0 auto; */
+    background: transparent !important;
 }
 
 .crash-courses {
@@ -1049,7 +1075,7 @@ h4 {
 }
 
 #popular-crash-courses span {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
 }
 
 .crash-courses img {
@@ -1061,17 +1087,18 @@ h4 {
 
 /* Footer */
 .footer {
-    background: rgba(10, 10, 30, 0.6);
-    color: rgba(255, 255, 255, 0.9);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text-secondary);
     padding: 28px 0;
     text-align: center;
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--glass-border);
     /* border-radius: 8px; */
     /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     transition: background-color 0.3s ease, color 0.3s ease;
+    margin-top: 3rem;
 }
 
 .footer .container {
@@ -1100,11 +1127,11 @@ h4 {
 }
 
 .contact-list strong {
-    color: #64D2FF;
+    color: var(--accent-vibrant);
 }
 
 .social-links a {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-secondary);
     font-size: 1.4em;
     margin: 0 12px;
     transition: color 0.3s ease;
@@ -1132,12 +1159,12 @@ h4 {
 
 .counter-box {
   flex: 1 1 150px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
   border-radius: 14px;
   padding: 1rem;
   text-align: center;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
   transition: transform 0.3s ease;
 }
 
@@ -1148,13 +1175,13 @@ h4 {
 .counter-box h3 {
   font-size: 1rem;
   margin-bottom: 0.5rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
 }
 
 .counter {
   font-size: 1.6rem;
   font-weight: bold;
-  color: #64D2FF;
+  color: var(--accent-vibrant);
   display: block;
 }
 
@@ -1170,17 +1197,17 @@ h4 {
 }
 
 .popup {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--glass-bg);
   padding: 12px 20px;
   border-radius: 12px;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
   font-size: 15px;
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.4s ease-in-out;
   min-width: 240px;
-  color: white;
+  color: var(--text-primary);
 }
 
 .popup.show {
@@ -1190,16 +1217,16 @@ h4 {
 
 .popup.success { border-left: 5px solid #34C759; }
 .popup.error   { border-left: 5px solid #FF3B30; }
-.popup.info    { border-left: 5px solid #007AFF; }
+.popup.info    { border-left: 5px solid var(--accent); }
 
 /* back to top */
 #backToTop {
     position: fixed;
     bottom: 40px;
     right: 40px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-strong);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--glass-border);
     padding: 12px 16px;
     border-radius: 14px;
     cursor: pointer;
@@ -1207,7 +1234,7 @@ h4 {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
 }
 
 #backToTop.show {
@@ -1329,9 +1356,9 @@ h4 {
     .nav-links li {
         margin: 0 10px;
         padding: 6px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--glass-border);
         border-radius: 14px;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--glass-bg);
         transition: all 0.3s ease;
     }
 
@@ -1340,7 +1367,7 @@ h4 {
     }
 
     .nav-links li:hover {
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.16);
         transform: none;
         border-color: rgba(255, 255, 255, 0.3);
     }
@@ -1358,14 +1385,14 @@ h4 {
 
     #popular button {
         color: white;
-        background-color: #007AFF;
+        background-color: var(--accent);
         border: none;
         border-radius: 14px;
         font-weight: bold;
         font-size: 16px;
         padding: 14px 28px;
         margin: 0 auto;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(16px);
     }
 
     #join-courses .course-card {
@@ -1408,9 +1435,9 @@ h4 {
         margin-left: 3rem;
         margin-bottom: 0;
         padding: 20px 35px;
-        border: 1px solid rgba(255, 255, 255, 0.25);
+        border: 1px solid var(--glass-border);
         border-radius: 14px;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(16px);
         /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6); */
     }
 
@@ -1468,10 +1495,10 @@ h4 {
         /* text-wrap: wrap; */
         word-wrap: break-word;
         /* text-align: start; */
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--glass-bg);
         border-radius: 18px;
         padding: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--glass-border);
     }
 
     .new-course h4 {
@@ -1490,16 +1517,16 @@ h4 {
         font-size: 18px;
         text-align: start;
         padding-bottom: 0.9rem;
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--text-secondary);
     }
 
     .new-course button {
         margin: 0;
         font-weight: 800;
         padding: 1rem 2rem;
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--glass-strong);
         color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid var(--glass-border);
         border-radius: 14px;
     }
 
@@ -1517,19 +1544,19 @@ h4 {
     .about-cboe {
         width: 500px;
         height: 400px;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--glass-bg);
         border-radius: 18px;
         padding: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--glass-border);
     }
 
     .what-cboe-does {
         width: 400px;
         height: 400px;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--glass-bg);
         border-radius: 18px;
         padding: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid var(--glass-border);
     }
 
     #cboe h2 {
