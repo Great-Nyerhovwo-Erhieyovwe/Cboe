@@ -318,6 +318,7 @@ header .text-content {
 /* Hide ticker on desktop */
 .tradingview-ticker-container {
   display: none;
+  height: auto;
 }
 
 /* Show ONLY on mobile/tablet (max-width: 1023px) */
