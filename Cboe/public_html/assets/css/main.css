@@ -316,34 +316,6 @@ header .text-content {
 }
 
 
-/* Show ONLY on mobile/tablet (max-width: 1023px) */
-@media (max-width: 1023px) {
-  .tradingview-ticker-container {
-    display: block;
-    width: 100%;
-    height: 48px;
-    margin: 12px 0;
-    position: relative;
-    z-index: 50;
-  }
-
-  .tradingview-widget-container {
-    width: 100% !important;
-    height: 100% !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-    overflow: hidden !important;
-  }
-
-  /* Optional: Hide TradingView copyright */
-  .tradingview-widget-copyright {
-    display: none !important;
-  }
-}
 
 /* Image slider */
 .slider-container {
@@ -743,46 +715,6 @@ li span {
     backdrop-filter: blur(16px);
 }
 
-/* TradingView Forex Widget - Glassmorphism Style */
-.tradingview-forex-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 1.5rem 0;
-  position: relative;
-  z-index: 50;
-}
-
-.tradingview-widget-container {
-  width: 100% !important;
-  height: 500px !important; /* Adjust as needed */
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Optional: Hide TradingView copyright */
-.tradingview-widget-copyright {
-  display: none !important;
-}
-
-/* Hover enhancement */
-.tradingview-forex-container:hover .tradingview-widget-container {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-}
-
-/* Responsive: Reduce height on mobile */
-@media (max-width: 768px) {
-  .tradingview-widget-container {
-    height: 400px !important;
-  }
-}
 
 /* accout type homepage */
 
