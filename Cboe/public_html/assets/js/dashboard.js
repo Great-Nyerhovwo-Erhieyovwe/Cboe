@@ -1,3 +1,6 @@
+// --- WARNING: DATA WILL BE LOST ON SERVER RESTART/REDEPLOYMENT (JSON Server Limitation) ---
+// This code has been updated to include Coin/Chain selection functionality.
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Global Constants
@@ -37,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Dashboard/Modal Specific Elements ---
     const balanceAmountEl = document.getElementById('balanceAmount');
     const roiEl = document.getElementById('roi');
-    // Ensure these two element IDs are correct in your HTML
     const activeInvestmentEl = document.getElementById('activeInvestment'); 
     const activeDepositEl = document.getElementById('activeDeposit'); 
     const transactionList = document.getElementById('transactionList');
@@ -55,11 +57,87 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusAdd = document.getElementById('statusAdd');
     const statusWithdraw = document.getElementById('statusWithdraw');
 
+    // --- NEW DEPOSIT MODAL ELEMENTS ---
+    const coinTypeSelect = document.getElementById('coinType');
+    const networkTypeSelect = document.getElementById('networkType');
+    const walletAddressDisplay = document.getElementById('walletAddressDisplay');
+    const qrCodeImage = document.getElementById('qrCodeImage');
+
+
     // State Variables (Mapping to API response fields)
     let balance = 0;
     let roi = 0;
     let activeInvestments = 0; // Amount for Active Investment/Trades
     let activeDepositsCount = 0; // Count for Active Deposits
+
+    // ====================================================================
+    // --- WALLET DATA (MOCK) & DYNAMIC DISPLAY LOGIC (NEW) ---
+    // ====================================================================
+
+    // --- MOCK DATA: REPLACE THESE VALUES WITH YOUR ACTUAL WALLET ADDRESSES AND QR PATHS ---
+    const WALLET_DATA = {
+        'USDT': {
+            'TRC-20': { address: 'T9yF....3vNq', qr_path: '../assets/qr_usdt_trc20.png' },
+            'ERC-20': { address: '0x32A....001b', qr_path: '../assets/qr_usdt_erc20.png' },
+            'BEP-20': { address: '0xBEF....77cD', qr_path: '../assets/qr_usdt_bep20.png' },
+        },
+        'BTC': {
+            'Bitcoin': { address: '1P5N....hJvA', qr_path: '../assets/IMG_3817.png' }, // Your BTC QR code
+        },
+        'ETH': {
+            'ERC-20': { address: '0x1A2....c8C9', qr_path: '../assets/qr_eth_erc20.png' },
+        }
+    };
+
+    function updateNetworkOptions() {
+        if (!coinTypeSelect || !networkTypeSelect) return;
+        
+        const selectedCoin = coinTypeSelect.value;
+        const networks = WALLET_DATA[selectedCoin];
+        
+        // Clear existing options
+        networkTypeSelect.innerHTML = ''; 
+
+        // Add new options for the selected coin
+        for (const network in networks) {
+            const option = document.createElement('option');
+            option.value = network;
+            option.textContent = network;
+            networkTypeSelect.appendChild(option);
+        }
+        // Update the address and QR code after updating networks
+        updateDepositDisplay();
+    }
+
+    function updateDepositDisplay() {
+        if (!walletAddressDisplay || !qrCodeImage) return;
+
+        const selectedCoin = coinTypeSelect.value;
+        const selectedNetwork = networkTypeSelect.value;
+
+        const data = WALLET_DATA[selectedCoin]?.[selectedNetwork];
+
+        if (data) {
+            walletAddressDisplay.textContent = data.address;
+            qrCodeImage.src = data.qr_path;
+            
+            // Show/hide the QR code based on whether a path is defined
+            qrCodeImage.parentElement.style.display = data.qr_path ? 'block' : 'none';
+        } else {
+            walletAddressDisplay.textContent = 'Please select a valid combination.';
+            qrCodeImage.src = '';
+            qrCodeImage.parentElement.style.display = 'none';
+        }
+    }
+
+    // Add event listeners to the new selectors
+    if (coinTypeSelect && networkTypeSelect) {
+        coinTypeSelect.addEventListener('change', updateNetworkOptions);
+        networkTypeSelect.addEventListener('change', updateDepositDisplay);
+        
+        // Initial call to set up the default view (e.g., BTC/Bitcoin)
+        updateNetworkOptions(); 
+    }
 
     // ====================================================================
     // --- HELPER FUNCTIONS ---
@@ -101,9 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateDashboard() {
         if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
         if (roiEl) roiEl.textContent = formatUSD(roi);
-        // Updates Active Investment/Trades
         if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
-        // Updates Active Deposits
         if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
     }
 
@@ -120,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // *** POPUP NOTIFICATION SETUP (For one-time transaction notifications) ***
+    // *** POPUP NOTIFICATION SETUP ***
     const popupContainer = document.createElement('div');
     popupContainer.id = 'popupContainer';
     popupContainer.style.position = 'fixed';
@@ -232,7 +308,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // ====================================================================
 
     if (openAddBtn && addModal) {
-        openAddBtn.addEventListener('click', () => openModal(addModal));
+        openAddBtn.addEventListener('click', () => {
+            openModal(addModal);
+            // Ensure the deposit display updates when the modal is first opened
+            updateDepositDisplay(); 
+        });
     }
     if (openWithdrawBtn && withdrawModal) {
         openWithdrawBtn.addEventListener('click', () => openModal(withdrawModal));
@@ -267,6 +347,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 statusAdd.style.color = 'red';
                 return;
             }
+            
+            // --- NEW: Capture selected Coin and Network ---
+            const coinType = coinTypeSelect.value;
+            const networkType = networkTypeSelect.value;
+            
+            // Basic validation for the selections
+            if (!coinType || !networkType) {
+                 statusAdd.textContent = " ! Please select a Coin Type and Network.";
+                 statusAdd.style.color = 'red';
+                 return;
+            }
 
             statusAdd.textContent = " ⏳ Awaiting admin approval...";
             statusAdd.style.color = 'black';
@@ -275,6 +366,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 userId: user.id,
                 type: 'deposit',
                 amount: amount,
+                coin: coinType,        // NEW
+                network: networkType,  // NEW
                 status: 'pending',
                 createdAt: new Date().toISOString()
             };
@@ -338,6 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 userId: user.id,
                 type: 'withdrawal',
                 amount: amount,
+                walletAddress: walletAddress, // Included address for withdrawal
                 status: 'pending',
                 createdAt: new Date().toISOString()
             };
