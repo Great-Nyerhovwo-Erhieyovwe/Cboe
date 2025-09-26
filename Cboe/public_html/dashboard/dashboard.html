@@ -157,27 +157,47 @@
 
   <!-- add funds modal -->
   <div class="modal-overlay" id="addModal">
-    <div class="modal">
-      <h2>Add Funds</h2>
-      <label>Wallet Address</label>
-      <input type="text" value="0xABC123...XYZ" readonly>
+  <div class="modal">
+    <h2>Add Funds</h2>
 
-      <label>Network</label>
-      <select>
-        <option>USDT</option>
-        <option disabled>BTC (Available soon)</option>
-        <option disabled>ETH (Available soon)</option>
-      </select>
+    <label for="coinType">Coin Type</label>
+    <select id="coinType">
+      <option value="USDT">USDT (Tether)</option>
+      <option value="BTC" selected>BTC (Bitcoin)</option>
+      <option value="ETH">ETH (Ethereum)</option>
+    </select>
 
-      <label>Amount (USD)</label>
-      <input type="number" id="addAmount" placeholder="Enter amount">
+    <label for="networkType">Chain / Network Type</label>
+    <select id="networkType">
+      <option value="TRC-20">TRC-20 (Tron)</option>
+      <option value="ERC-20">ERC-20 (Ethereum)</option>
+      <option value="BEP-20">BEP-20 (BSC)</option>
+    </select>
+    
+    <label>Deposit Wallet Address</label>
+    <p id="walletAddressDisplay" style="font-weight: bold; padding: 5px; border: 1px dashed #555; background-color: #333; word-break: break-all;">
+      1P5N....hJvA
+    </p>
 
-      <button class="confirm-btn confirmAdd" id="confirmAdd">Confirm</button>
-      <p class="status-msg" id="statusAdd"></p>
-
-      <span class="close-btn" data-modal="addModal">&times;</span>
+    <div id="qrCodeContainer" style="text-align: center; margin: 15px 0;">
+      <img 
+        id="qrCodeImage"
+        src="../assets/IMG_3817.png" 
+        alt="Deposit QR Code" 
+        style="width: 150px; height: 150px; border: 1px solid #444; border-radius: 8px; padding: 5px;"
+      >
+      <p style="font-size: 0.8em; color: #888;">Scan to deposit.</p>
     </div>
+    
+    <label>Amount (USD)</label>
+    <input type="number" id="addAmount" placeholder="Enter amount">
+
+    <button class="confirm-btn confirmAdd" id="confirmAdd">Confirm</button>
+    <p class="status-msg" id="statusAdd"></p>
+
+    <span class="close-btn" data-modal="addModal">&times;</span>
   </div>
+</div>
 
   <!-- withdraw modal -->
   <div class="modal-overlay" id="withdrawModal">
