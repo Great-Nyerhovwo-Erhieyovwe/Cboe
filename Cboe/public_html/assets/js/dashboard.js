@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         profileNameEl.textContent = `Welcome, ${user.username}`; 
     }
 
-    // --- Global DOM Elements (Expected on all dashboard pages) ---
+    // --- Global DOM Elements ---
     const sidebar = document.getElementById("sidebar");
     const sidebarToggleBtn = document.getElementById("sidebar-toggle");
     const hamburgerIcon = document.querySelector("#sidebar-toggle i");
@@ -34,10 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const dropdownMenu = profileDropdown ? profileDropdown.querySelector(".dropdown-menu") : null;
     const dashboardContainer = document.getElementById("dashboard-container"); 
 
-    // --- Dashboard/Modal Specific Elements (Must be checked for existence before use) ---
+    // --- Dashboard/Modal Specific Elements ---
     const balanceAmountEl = document.getElementById('balanceAmount');
     const roiEl = document.getElementById('roi');
-    const activeDepositEl = document.getElementById('activeDeposit');
+    // Ensure these two element IDs are correct in your HTML
+    const activeInvestmentEl = document.getElementById('activeInvestment'); 
+    const activeDepositEl = document.getElementById('activeDeposit'); 
     const transactionList = document.getElementById('transactionList');
 
     const addModal = document.getElementById('addModal');
@@ -53,10 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusAdd = document.getElementById('statusAdd');
     const statusWithdraw = document.getElementById('statusWithdraw');
 
-    // State Variables
+    // State Variables (Mapping to API response fields)
     let balance = 0;
     let roi = 0;
-    let deposits = 0;
+    let activeInvestments = 0; // Amount for Active Investment/Trades
+    let activeDepositsCount = 0; // Count for Active Deposits
 
     // ====================================================================
     // --- HELPER FUNCTIONS ---
@@ -91,13 +94,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function formatUSD(amount) {
-        return `$${amount.toFixed(2)}`;
+        return `$${Number(amount).toFixed(2)}`;
     }
 
+    // SYNCHRONIZATION HUB FOR METRICS
     function updateDashboard() {
         if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
         if (roiEl) roiEl.textContent = formatUSD(roi);
-        if (activeDepositEl) activeDepositEl.textContent = `${deposits} active deposits`;
+        // Updates Active Investment/Trades
+        if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
+        // Updates Active Deposits
+        if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
     }
 
     function renderTransactions(transactions) {
@@ -113,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // *** POPUP NOTIFICATION SETUP ***
+    // *** POPUP NOTIFICATION SETUP (For one-time transaction notifications) ***
     const popupContainer = document.createElement('div');
     popupContainer.id = 'popupContainer';
     popupContainer.style.position = 'fixed';
@@ -166,16 +173,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- API CALL FUNCTIONS ---
     // ====================================================================
 
+    // PRIMARY DATA FETCH FUNCTION - SYNCS ALL METRICS
     async function fetchUserData() {
         try {
             const res = await fetch(`${API_USERS}/${user.id}`);
             if (!res.ok) throw new Error('Failed to load user data');
             const userData = await res.json();
             
+            // Update all state variables with fetched data (CRITICAL SYNCHRONIZATION POINT)
             balance = userData.balance || 0;
             roi = userData.roi || 0;
-            deposits = userData.deposits || 0;
+            activeInvestments = userData.activeTrades || 0; // Matches Active Investment/Trades
+            activeDepositsCount = userData.deposits || 0; // Matches Active Deposits count
             
+            // Synchronize the UI elements
             updateDashboard();
         } catch (err) {
             console.error('Error loading user data:', err);
@@ -217,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ====================================================================
-    // --- MODAL EVENT LISTENERS (Conditional on modal elements) ---
+    // --- MODAL EVENT LISTENERS (For Deposit/Withdrawal Synchronization) ---
     // ====================================================================
 
     if (openAddBtn && addModal) {
@@ -285,6 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     closeModal(addModal);
                 }, 1500);
 
+                // SYNCHRONIZATION CALLS AFTER SUCCESSFUL ACTION
                 await fetchUserData(); 
                 await fetchTransactionsWithPopup(); 
 
@@ -347,6 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     closeModal(withdrawModal);
                 }, 1500);
 
+                // SYNCHRONIZATION CALLS AFTER SUCCESSFUL ACTION
                 await fetchUserData(); 
                 await fetchTransactionsWithPopup(); 
 
@@ -362,9 +375,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- GLOBAL UI COMPONENTS (Theme, Sidebar, Dropdown) ---
     // ====================================================================
 
-    // --- Theme toggle ---
+    // --- Theme toggle (Persistence) ---
     if (themeToggleBtn && themeIcon) {
-        // Load theme preference from localStorage on page load (Persistence)
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark-mode') {
             document.body.classList.add('dark-mode');
@@ -388,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Sidebar toggle (Hamburger menu) ---
+    // --- Sidebar toggle ---
     if (sidebar && sidebarToggleBtn && mainContent && mobileOverlay && hamburgerIcon) {
         const mediaQuery = window.matchMedia("(max-width: 768px)");
 
@@ -456,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ====================================================================
-    // --- WIDGETS (Conditional on container elements) ---
+    // --- WIDGETS ---
     // ====================================================================
 
     // === TradingView widget ===
@@ -492,14 +504,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ====================================================================
-    // --- INITIALIZATION AND POLLING ---
+    // --- INITIALIZATION AND POLLING (Passive Sync) ---
     // ====================================================================
 
-    // Initial load
+    // Initial load fetches all current data
     fetchUserData();
     fetchTransactionsWithPopup(); 
 
-    // Poll for updates every 60 seconds (Only poll if we expect dashboard data)
+    // Polling for passive synchronization every 60 seconds
     if (balanceAmountEl || transactionList) {
         setInterval(() => {
             fetchUserData();
