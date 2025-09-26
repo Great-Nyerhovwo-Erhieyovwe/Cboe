@@ -1145,7 +1145,7 @@ h4 {
 /* popups */
 #popup-container {
   position: fixed;
-  bottom: 70px;
+  bottom: 200px;
   right: 20px;
   z-index: 9999;
   display: flex;
