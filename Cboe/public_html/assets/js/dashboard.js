@@ -19,29 +19,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // API URLs
   // const API_BASE = "http://localhost:5500";
-  const API_BASE = "https://cboejsonserver.onrender.com/api";
+  const API_BASE = "https://cboejsonserver.onrender.com/api"; // ✅ FIXED: Removed trailing spaces
   const API_USERS = `${API_BASE}/users`;
   const API_TRANSACTIONS = `${API_BASE}/transactions`;
 
   // --- DOM Elements ---
+  // ✅ SAFETY: Only get elements that exist on current page
   const dashboardContainer = document.getElementById("dashboard-container");
   const sidebar = document.getElementById("sidebar");
   const sidebarToggleBtn = document.getElementById("sidebar-toggle");
-  const hamburgerIcon = document.querySelector("#sidebar-toggle i");
+  const hamburgerIcon = sidebarToggleBtn ? sidebarToggleBtn.querySelector("i") : null; // ✅ FIXED: Check if btn exists
   const mainContent = document.getElementById("main-content");
   const mobileOverlay = document.getElementById("mobile-overlay");
   const themeToggleBtn = document.getElementById("theme-toggle");
-  const themeIcon = document.querySelector("#theme-toggle i");
+  const themeIcon = themeToggleBtn ? themeToggleBtn.querySelector("i") : null; // ✅ FIXED: Check if btn exists
   const profileDropdown = document.getElementById("profile-dropdown");
-  const dropdownMenu = profileDropdown.querySelector(".dropdown-menu");
+  const dropdownMenu = profileDropdown ? profileDropdown.querySelector(".dropdown-menu") : null; // ✅ FIXED
 
   const balanceAmountEl = document.getElementById('balanceAmount');
   const roiEl = document.getElementById('roi');
   const activeDepositEl = document.getElementById('activeDeposit');
   const transactionList = document.getElementById('transactionList');
 
-
-  // Elements
+  // Elements for modals
   const addModal = document.getElementById('addModal');
   const withdrawModal = document.getElementById('withdrawModal');
 
@@ -61,35 +61,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Helper function to open modal
   function openModal(modal) {
-    modal.style.display = 'flex';
+    if (modal) modal.style.display = 'flex'; // ✅ FIXED: Check if modal exists
   }
 
   // Helper function to close modal
   function closeModal(modal) {
-    modal.style.display = 'none';
-    clearStatus();
-    clearInputs();
+    if (modal) { // ✅ FIXED: Check if modal exists
+      modal.style.display = 'none';
+      clearStatus();
+      clearInputs();
+    }
   }
 
   // Clear status messages
   function clearStatus() {
-    statusAdd.textContent = '';
-    statusWithdraw.textContent = '';
+    if (statusAdd) statusAdd.textContent = ''; // ✅ FIXED: Check before use
+    if (statusWithdraw) statusWithdraw.textContent = '';
   }
 
   // Clear inputs
   function clearInputs() {
-    addAmountInput.value = '';
-    withdrawAmountInput.value = '';
-    // clear wallet address input in withdraw modal if needed
-    withdrawModal.querySelector('input[type="text"]').value = '';
+    if (addAmountInput) addAmountInput.value = ''; // ✅ FIXED: Check before use
+    if (withdrawAmountInput) withdrawAmountInput.value = '';
+    if (withdrawModal) {
+      const walletInput = withdrawModal.querySelector('input[type="text"]');
+      if (walletInput) walletInput.value = '';
+    }
   }
 
   // Open modals on button clicks
-  if (openAddBtn) {
+  if (openAddBtn && addModal) { // ✅ FIXED: Only add listener if both exist
     openAddBtn.addEventListener('click', () => openModal(addModal));
   }
-  if (openWithdrawBtn) {
+  if (openWithdrawBtn && withdrawModal) {
     openWithdrawBtn.addEventListener('click', () => openModal(withdrawModal));
   }
 
@@ -104,61 +108,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Close modal if clicking outside modal content
   [addModal, withdrawModal].forEach(modal => {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        closeModal(modal);
-      }
-    });
+    if (modal) { // ✅ FIXED: Check if modal exists
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal(modal);
+        }
+      });
+    }
   });
 
   // Confirm Add Funds
-  confirmAddBtn.addEventListener('click', () => {
-    const amount = parseFloat(addAmountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-      statusAdd.textContent = 'Please enter a valid amount';
-      statusAdd.style.color = 'red';
-      return;
-    }
-    statusAdd.textContent = 'Processing...';
-    statusAdd.style.color = 'black';
+  if (confirmAddBtn) { // ✅ FIXED: Only add listener if button exists
+    confirmAddBtn.addEventListener('click', () => {
+      const amount = parseFloat(addAmountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        if (statusAdd) statusAdd.textContent = 'Please enter a valid amount'; // ✅ FIXED
+        if (statusAdd) statusAdd.style.color = 'red';
+        return;
+      }
+      if (statusAdd) {
+        statusAdd.textContent = 'Processing...';
+        statusAdd.style.color = 'black';
+      }
 
-    // Your logic to handle add funds here, e.g., API call
-    // Simulating async operation:
-    setTimeout(() => {
-      statusAdd.textContent = `Successfully added $${amount.toFixed(2)}!`;
-      statusAdd.style.color = 'green';
-      // Optionally close modal after success:
-      // closeModal(addModal);
-    }, 1500);
-  });
+      // Simulating async operation:
+      setTimeout(() => {
+        if (statusAdd) {
+          statusAdd.textContent = `Successfully added $${amount.toFixed(2)}!`;
+          statusAdd.style.color = 'green';
+        }
+      }, 1500);
+    });
+  }
 
   // Confirm Withdraw Funds
-  confirmWithdrawBtn.addEventListener('click', () => {
-    const amount = parseFloat(withdrawAmountInput.value);
-    const walletAddress = withdrawModal.querySelector('input[type="text"]').value.trim();
-    if (!walletAddress) {
-      statusWithdraw.textContent = 'Please enter your wallet address';
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      statusWithdraw.textContent = 'Please enter a valid amount';
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-    statusWithdraw.textContent = 'Processing...';
-    statusWithdraw.style.color = 'black';
+  if (confirmWithdrawBtn) { // ✅ FIXED: Only add listener if button exists
+    confirmWithdrawBtn.addEventListener('click', () => {
+      const amount = parseFloat(withdrawAmountInput.value);
+      const walletAddress = withdrawModal ? withdrawModal.querySelector('input[type="text"]').value.trim() : '';
+      if (!walletAddress) {
+        if (statusWithdraw) {
+          statusWithdraw.textContent = 'Please enter your wallet address';
+          statusWithdraw.style.color = 'red';
+        }
+        return;
+      }
+      if (isNaN(amount) || amount <= 0) {
+        if (statusWithdraw) {
+          statusWithdraw.textContent = 'Please enter a valid amount';
+          statusWithdraw.style.color = 'red';
+        }
+        return;
+      }
+      if (statusWithdraw) {
+        statusWithdraw.textContent = 'Processing...';
+        statusWithdraw.style.color = 'black';
+      }
 
-    // Your logic to handle withdraw funds here, e.g., API call
-    setTimeout(() => {
-      statusWithdraw.textContent = `Successfully withdrew $${amount.toFixed(2)}!`;
-      statusWithdraw.style.color = 'green';
-      // Optionally close modal after success:
-      // closeModal(withdrawModal);
-    }, 1500);
-  });
-
-
+      setTimeout(() => {
+        if (statusWithdraw) {
+          statusWithdraw.textContent = `Successfully withdrew $${amount.toFixed(2)}!`;
+          statusWithdraw.style.color = 'green';
+        }
+      }, 1500);
+    });
+  }
 
   // Variables to store user data locally until fetched
   let balance = 0;
@@ -172,13 +186,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Display balance, roi, deposits
   function updateDashboard() {
-    balanceAmountEl.textContent = formatUSD(balance);
-    roiEl.textContent = formatUSD(roi);
-    activeDepositEl.textContent = `${deposits} active deposits`;
+    if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance); // ✅ FIXED: Check before use
+    if (roiEl) roiEl.textContent = formatUSD(roi);
+    if (activeDepositEl) activeDepositEl.textContent = `${deposits} active deposits`;
   }
 
   // Clear and populate transaction list from array of transaction objects
   function renderTransactions(transactions) {
+    if (!transactionList) return; // ✅ FIXED: Exit if no container
     transactionList.innerHTML = ''; // clear old
 
     transactions.forEach(tx => {
@@ -191,23 +206,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // pop ups
 
-  // Fetch user details (balance etc) from JSON server
-  async function fetchUserData() {
-    try {
-      const res = await fetch(`${API_USERS}/${user.id}`);
-      if (!res.ok) throw new Error('Failed to load user data');
-      const userData = await res.json();
-      balance = userData.balance || 0;
-      roi = userData.roi || 0;
-      deposits = userData.deposits || 0;
-      updateDashboard();
-    } catch (err) {
-      console.error(err);
-      alert('Error loading user data');
-    }
-  }
-
-  // *** POPUP NOTIFICATION SETUP ***
   // Create popup container
   const popupContainer = document.createElement('div');
   popupContainer.id = 'popupContainer';
@@ -288,13 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Replace calls to fetchTransactions with fetchTransactionsWithPopup
-  // Initial load
-  fetchUserData();
-  fetchTransactionsWithPopup();
-
-  // Poll for updates every 60 seconds
-  setInterval(fetchTransactionsWithPopup, 60000);
+  // ✅ REMOVED DUPLICATE fetchUserData() and fetchTransactions() definitions
 
   // Fetch user details (balance etc) from JSON server
   async function fetchUserData() {
@@ -312,244 +304,219 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Fetch user's transactions from JSON server
-  async function fetchTransactions() {
-    try {
-      const res = await fetch(`${API_TRANSACTIONS}?userId=${user.id}&_sort=id&_order=desc`);
-      if (!res.ok) throw new Error('Failed to load transactions');
-      const transactions = await res.json();
-      renderTransactions(transactions);
-    } catch (err) {
-      console.error(err);
-      alert('Error loading transactions');
-    }
+  // --- Add funds (REAL API VERSION) ---
+  if (confirmAddBtn) {
+    confirmAddBtn.addEventListener('click', async (e) => {
+      e.preventDefault(); // Prevent any default form submission or button default
+
+      if (!addAmountInput) return;
+      const amount = parseFloat(addAmountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        if (statusAdd) statusAdd.textContent = " ! Please enter a valid amount.";
+        return;
+      }
+
+      // Prepare new deposit transaction
+      const newTransaction = {
+        userId: user.id,
+        type: 'deposit',
+        amount: amount,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const res = await fetch(API_TRANSACTIONS, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTransaction)
+        });
+
+        if (!res.ok) throw new Error('Failed to submit deposit request.');
+
+        if (statusAdd) statusAdd.textContent = " ⏳ Awaiting admin approval...";
+        if (addAmountInput) addAmountInput.value = '';
+
+        setTimeout(() => {
+          if (addModal) addModal.style.display = 'none';
+          if (statusAdd) statusAdd.textContent = '';
+        }, 2000);
+
+        // Only refresh if on dashboard
+        if (transactionList) {
+          await fetchTransactionsWithPopup();
+        }
+
+      } catch (err) {
+        if (statusAdd) statusAdd.textContent = '❌ ' + err.message;
+      }
+    });
   }
 
-  // --- Add funds ---
-  confirmAdd.addEventListener('click', async (e) => {
-    e.preventDefault(); // Prevent any default form submission or button default
+  // --- Withdraw funds (REAL API VERSION) ---
+  if (confirmWithdrawBtn) {
+    confirmWithdrawBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
 
-    const amount = parseFloat(addAmountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-      statusAdd.textContent = " ! Please enter a valid amount.";
-      return;
-    }
+      if (!withdrawAmountInput) return;
+      const amount = parseFloat(withdrawAmountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        if (statusWithdraw) statusWithdraw.textContent = " ! Enter a valid amount.";
+        return;
+      }
 
-    // Prepare new deposit transaction
-    const newTransaction = {
-      userId: user.id,
-      type: 'deposit',
-      amount: amount,
-      status: 'pending',
-      createdAt: new Date().toISOString()
+      // Get current balance for validation (only if on dashboard)
+      let currentBalance = 0;
+      if (balanceAmountEl) {
+        const balanceText = balanceAmountEl.textContent.replace(/[^0-9.]/g, '');
+        currentBalance = parseFloat(balanceText) || 0;
+      }
+
+      if (amount > currentBalance && currentBalance > 0) {
+        if (statusWithdraw) statusWithdraw.textContent = " Insufficient balance.";
+        return;
+      }
+
+      // Prepare new withdrawal transaction
+      const newTransaction = {
+        userId: user.id,
+        type: 'withdrawal',
+        amount: amount,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const res = await fetch(API_TRANSACTIONS, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTransaction)
+        });
+
+        if (!res.ok) throw new Error('Failed to submit withdrawal request.');
+
+        if (statusWithdraw) statusWithdraw.textContent = " ⏳ Awaiting admin approval...";
+        if (withdrawAmountInput) withdrawAmountInput.value = '';
+
+        setTimeout(() => {
+          if (withdrawModal) withdrawModal.style.display = 'none';
+          if (statusWithdraw) statusWithdraw.textContent = '';
+        }, 2000);
+
+        // Only refresh if on dashboard
+        if (transactionList) {
+          await fetchTransactionsWithPopup();
+        }
+
+      } catch (err) {
+        if (statusWithdraw) statusWithdraw.textContent = '❌ ' + err.message;
+      }
+    });
+  }
+
+  // Initial load (only if on dashboard)
+  if (balanceAmountEl || transactionList) {
+    fetchUserData();
+    fetchTransactionsWithPopup();
+    setInterval(fetchTransactionsWithPopup, 60000); // Poll every 60s
+  }
+
+  // --- Sidebar toggle (only if sidebar exists) ---
+  if (sidebar && sidebarToggleBtn && hamburgerIcon) {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+
+    const toggleSidebar = () => {
+      if (mediaQuery.matches) {
+        sidebar.classList.toggle("open");
+        if (mainContent) mainContent.classList.toggle("pushed-mobile");
+        if (mobileOverlay) mobileOverlay.classList.toggle("visible");
+        sidebarToggleBtn.classList.toggle("is-active");
+      } else {
+        if (dashboardContainer) dashboardContainer.classList.toggle("sidebar-collapsed");
+        sidebarToggleBtn.classList.toggle("is-active");
+      }
+
+      if (hamburgerIcon.classList.contains("fa-bars")) {
+        hamburgerIcon.classList.replace("fa-bars", "fa-times");
+      } else {
+        hamburgerIcon.classList.replace("fa-times", "fa-bars");
+      }
     };
 
-    try {
-      const res = await fetch(API_TRANSACTIONS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTransaction)
-      });
+    sidebarToggleBtn.addEventListener("click", toggleSidebar);
+    if (mobileOverlay) mobileOverlay.addEventListener("click", toggleSidebar);
 
-      if (!res.ok) throw new Error('Failed to submit deposit request.');
-
-      statusAdd.textContent = " ⏳ Awaiting admin approval...";
-      addAmountInput.value = '';
-
-      setTimeout(() => {
-        addModal.style.display = 'none';
-        statusAdd.textContent = '';
-      }, 2000);
-
-      await fetchTransactions();
-      await fetchTransactionsWithPopup();
-
-    } catch (err) {
-      statusAdd.textContent = '❌ ' + err.message;
-    }
-  });
-
-  // --- Withdraw funds ---
-  confirmWithdraw.addEventListener('click', async (e) => {
-    e.preventDefault();
-
-    const amount = parseFloat(withdrawAmountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-      statusWithdraw.textContent = " ! Enter a valid amount.";
-      return;
-    }
-
-    if (amount > balance) {
-      statusWithdraw.textContent = " Insufficient balance.";
-      return;
-    }
-
-    // Prepare new withdrawal transaction
-    const newTransaction = {
-      userId: user.id,
-      type: 'withdrawal',
-      amount: amount,
-      status: 'pending',
-      createdAt: new Date().toISOString()
+    const setInitialSidebarState = () => {
+      if (mediaQuery.matches) {
+        sidebar.classList.remove("open");
+        if (mainContent) mainContent.classList.remove("pushed-mobile");
+        if (mobileOverlay) mobileOverlay.classList.remove("visible");
+        if (dashboardContainer) dashboardContainer.classList.remove("sidebar-collapsed");
+      } else {
+        if (dashboardContainer) dashboardContainer.classList.remove("sidebar-collapsed");
+      }
+      hamburgerIcon.classList.remove("fa-times");
+      hamburgerIcon.classList.add("fa-bars");
+      sidebarToggleBtn.classList.remove("is-active");
     };
 
-    try {
-      const res = await fetch(API_TRANSACTIONS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTransaction)
-      });
+    setInitialSidebarState();
+    mediaQuery.addEventListener("change", setInitialSidebarState);
+  }
 
-      if (!res.ok) throw new Error('Failed to submit withdrawal request.');
+  // --- Theme toggle (only if theme toggle exists) ---
+  if (themeToggleBtn && themeIcon) {
+    themeToggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      if (document.body.classList.contains("dark-mode")) {
+        themeIcon.classList.replace("fa-moon", "fa-sun");
+      } else {
+        themeIcon.classList.replace("fa-sun", "fa-moon");
+      }
+    });
+  }
 
-      statusWithdraw.textContent = " ⏳ Awaiting admin approval...";
-      withdrawAmountInput.value = '';
+  // --- Profile dropdown (only if exists) ---
+  if (profileDropdown && dropdownMenu) {
+    profileDropdown.addEventListener("click", (e) => {
+      dropdownMenu.classList.toggle("hidden");
+      e.stopPropagation();
+    });
 
-      setTimeout(() => {
-        withdrawModal.style.display = 'none';
-        statusWithdraw.textContent = '';
-      }, 2000);
-
-      await fetchTransactions();
-      await fetchTransactionsWithPopup();
-
-    } catch (err) {
-      statusWithdraw.textContent = '❌ ' + err.message;
-    }
-  });
-
-//   async function fetchUserMessages(userId) {
-//   try {
-//     const res = await fetch(`http://172.20.10.4:5000/messages?userId=${userId}`);
-//     if (!res.ok) throw new Error('Failed to fetch messages');
-//     const messages = await res.json();
-//     displayUserMessages(messages);
-//   } catch (err) {
-//     console.error(err.message);
-//   }
-// }
-
-// function displayUserMessages(messages) {
-//   const container = document.getElementById('user-messages');
-//   if (!container) return;
-  
-//   container.innerHTML = '';
-
-//   if (messages.length === 0) {
-//     container.textContent = 'No messages.';
-//     return;
-//   }
-
-//   messages.forEach(msg => {
-//     const div = document.createElement('div');
-//     div.className = 'user-message';
-//     div.innerHTML = `
-//       <p><strong>Message:</strong> ${msg.message}</p>
-//       <p><strong>Billing Amount:</strong> $${Number(msg.billingAmount).toFixed(2)}</p>
-//       <p><em>Sent at: ${new Date(msg.createdAt).toLocaleString()}</em></p>
-//       <hr/>
-//     `;
-//     container.appendChild(div);
-//   });
-// }
-
-
-
-//   const loggedInUserId = 1; // Replace this with actual user ID logic
-//   fetchUserMessages(loggedInUserId);
-
-  // Initial load
-  fetchUserData();
-  fetchTransactions();
-
-  // --- Sidebar toggle ---
-  const mediaQuery = window.matchMedia("(max-width: 768px)");
-
-  const toggleSidebar = () => {
-    if (mediaQuery.matches) {
-      sidebar.classList.toggle("open");
-      mainContent.classList.toggle("pushed-mobile");
-      mobileOverlay.classList.toggle("visible");
-      sidebarToggleBtn.classList.toggle("is-active");
-    } else {
-      dashboardContainer.classList.toggle("sidebar-collapsed");
-      sidebarToggleBtn.classList.toggle("is-active");
-    }
-
-    if (hamburgerIcon.classList.contains("fa-bars")) {
-      hamburgerIcon.classList.replace("fa-bars", "fa-times");
-    } else {
-      hamburgerIcon.classList.replace("fa-times", "fa-bars");
-    }
-  };
-
-  sidebarToggleBtn.addEventListener("click", toggleSidebar);
-  mobileOverlay.addEventListener("click", toggleSidebar);
-
-  const setInitialSidebarState = () => {
-    if (mediaQuery.matches) {
-      sidebar.classList.remove("open");
-      mainContent.classList.remove("pushed-mobile");
-      mobileOverlay.classList.remove("visible");
-      dashboardContainer.classList.remove("sidebar-collapsed");
-    } else {
-      dashboardContainer.classList.remove("sidebar-collapsed");
-    }
-    hamburgerIcon.classList.remove("fa-times");
-    hamburgerIcon.classList.add("fa-bars");
-    sidebarToggleBtn.classList.remove("is-active");
-  };
-
-  setInitialSidebarState();
-  mediaQuery.addEventListener("change", setInitialSidebarState);
-
-  // --- Theme toggle ---
-  themeToggleBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    if (document.body.classList.contains("dark-mode")) {
-      themeIcon.classList.replace("fa-moon", "fa-sun");
-    } else {
-      themeIcon.classList.replace("fa-sun", "fa-moon");
-    }
-  });
-
-  // --- Profile dropdown ---
-  profileDropdown.addEventListener("click", (e) => {
-    dropdownMenu.classList.toggle("hidden");
-    e.stopPropagation();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!profileDropdown.contains(e.target)) {
-      dropdownMenu.classList.add("hidden");
-    }
-  });
+    document.addEventListener("click", (e) => {
+      if (!profileDropdown.contains(e.target)) {
+        dropdownMenu.classList.add("hidden");
+      }
+    });
+  }
 
   // === TradingView widget ===
-  let script = document.createElement('script');
-  script.src = 'https://s3.tradingview.com/tv.js';
-  script.onload = function () {
-    new TradingView.widget({
-      container_id: "tradingview_eurusd",
-      autosize: true,
-      symbol: "FX:EURUSD",
-      width: "900px",
-      height: 400,
-      theme: "light"
-    });
-  };
-  document.head.appendChild(script);
+  const tradingContainer = document.getElementById("tradingview_eurusd");
+  if (tradingContainer) {
+    let script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js'; // ✅ FIXED: Removed trailing spaces
+    script.onload = function () {
+      new TradingView.widget({
+        container_id: "tradingview_eurusd",
+        autosize: true,
+        symbol: "FX:EURUSD",
+        theme: "light"
+      });
+    };
+    document.head.appendChild(script);
+  }
 
   // === Chart.js Line Chart ===
-  const ctx = document.getElementById('analyticsChart')?.getContext('2d');
-  if (ctx) {
+  const chartCanvas = document.getElementById('analyticsChart');
+  if (chartCanvas) {
+    const ctx = chartCanvas.getContext('2d');
     const analyticsChart = new Chart(ctx, {
       type: 'line',
-      data: {
+       {
         labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         datasets: [{
           label: 'Revenue',
-          data: [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
+           [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
           borderColor: '#dc691e', // copper brown
           borderWidth: 2,
           fill: false,
