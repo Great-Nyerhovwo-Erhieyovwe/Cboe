@@ -112,15 +112,8 @@
         </div>
         
         <!-- TradingView Widget BEGIN -->
-<div class="tradingview-widget-container mobile-only">
+<div class="tradingview-widget-container">
   <div class="tradingview-widget-container__widget"></div>
-  <div class="tradingview-widget-copyright">
-    <a href="https://www.tradingview.com/markets/" 
-       rel="noopener nofollow" target="_blank">
-      <span class="blue-text">Ticker tape</span>
-    </a>
-    <span class="trademark"> by TradingView</span>
-  </div>
   <script type="text/javascript" 
           src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" 
           async>
@@ -134,19 +127,15 @@
     ],
     "colorTheme": "dark",
     "locale": "en",
-    "largeChartUrl": "",
-    "isTransparent": true,
+    "isTransparent": true,   /* transparent background */
     "showSymbolLogo": true,
     "displayMode": "adaptive",
-    "height": 60   /* ✅ Added height here */
+    "width": "100%",         /* auto-fit container */
+    "height": 60             /* fixed height */
   }
   </script>
 </div>
 <!-- TradingView Widget END -->
-
-</div>
-<!-- TradingView Widget END -->
-
 
     </header>
 
