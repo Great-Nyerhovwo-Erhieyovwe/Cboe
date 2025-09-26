@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     // Global Constants
-    const API_BASE = "https://cboejsonserver.onrender.com/api"; // FIX: Removed trailing whitespace
+    const API_BASE = "https://cboejsonserver.onrender.com/api"; 
     const API_USERS = `${API_BASE}/users`;
     const API_TRANSACTIONS = `${API_BASE}/transactions`;
 
@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const themeToggleBtn = document.getElementById("theme-toggle");
     const themeIcon = document.querySelector("#theme-toggle i");
     const profileDropdown = document.getElementById("profile-dropdown");
-    // FIX: Check for profileDropdown before querying descendants
     const dropdownMenu = profileDropdown ? profileDropdown.querySelector(".dropdown-menu") : null;
     const dashboardContainer = document.getElementById("dashboard-container"); 
 
@@ -63,14 +62,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- HELPER FUNCTIONS ---
     // ====================================================================
 
-    // Helper function to open modal (Robust)
     function openModal(modal) {
         if (modal) {
             modal.style.display = 'flex';
         }
     }
 
-    // Helper function to close modal (Robust)
     function closeModal(modal) {
         if (modal) {
             modal.style.display = 'none';
@@ -79,13 +76,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Clear status messages (Robust)
     function clearStatus() {
         if (statusAdd) statusAdd.textContent = '';
         if (statusWithdraw) statusWithdraw.textContent = '';
     }
 
-    // Clear inputs (Robust)
     function clearInputs() {
         if (addAmountInput) addAmountInput.value = '';
         if (withdrawAmountInput) withdrawAmountInput.value = '';
@@ -95,23 +90,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Format money nicely (Correct)
     function formatUSD(amount) {
         return `$${amount.toFixed(2)}`;
     }
 
-    // Display balance, roi, deposits (Conditional on elements existing)
     function updateDashboard() {
         if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
         if (roiEl) roiEl.textContent = formatUSD(roi);
         if (activeDepositEl) activeDepositEl.textContent = `${deposits} active deposits`;
     }
 
-    // Clear and populate transaction list (Conditional on element existing)
     function renderTransactions(transactions) {
-        if (!transactionList) return; // Only run on pages with the list
+        if (!transactionList) return; 
 
-        transactionList.innerHTML = ''; // clear old
+        transactionList.innerHTML = ''; 
 
         transactions.forEach(tx => {
             const li = document.createElement('li');
@@ -151,14 +143,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }, 500);
         }, 4000);
     }
-
-    // Keep track of notified transaction IDs
+    
+    // --- PERSISTENT NOTIFICATION TRACKING ---
     let notifiedTransactionIds = new Set();
-    const storedNotified = sessionStorage.getItem('notifiedTransactionIds');
+    const NOTIFIED_KEY = `notifiedTransactions_${user.id}`; 
+    const storedNotified = localStorage.getItem(NOTIFIED_KEY); 
+
     if (storedNotified) {
         try {
-            notifiedTransactionIds = new Set(JSON.parse(storedNotified));
-        } catch {
+            const storedArray = JSON.parse(storedNotified);
+            if (Array.isArray(storedArray)) {
+                notifiedTransactionIds = new Set(storedArray);
+            }
+        } catch (e) {
+            console.error("Failed to parse notified transactions from localStorage:", e);
             notifiedTransactionIds = new Set();
         }
     }
@@ -168,28 +166,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- API CALL FUNCTIONS ---
     // ====================================================================
 
-    // Fetch user details (balance etc) from JSON server (Single, unified definition)
     async function fetchUserData() {
         try {
             const res = await fetch(`${API_USERS}/${user.id}`);
             if (!res.ok) throw new Error('Failed to load user data');
             const userData = await res.json();
             
-            // Update state
             balance = userData.balance || 0;
             roi = userData.roi || 0;
             deposits = userData.deposits || 0;
             
-            // Update UI
             updateDashboard();
         } catch (err) {
             console.error('Error loading user data:', err);
         }
     }
 
-    // Fetch transactions and handle popups (Conditional on transactionList existence)
     async function fetchTransactionsWithPopup() {
-        // FIX: Only fetch transactions if there is an element to display them in
         if (!transactionList) return; 
 
         try {
@@ -211,8 +204,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            sessionStorage.setItem(
-                'notifiedTransactionIds',
+            localStorage.setItem(
+                NOTIFIED_KEY,
                 JSON.stringify([...notifiedTransactionIds])
             );
 
@@ -227,7 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- MODAL EVENT LISTENERS (Conditional on modal elements) ---
     // ====================================================================
 
-    // Open modals on button clicks
     if (openAddBtn && addModal) {
         openAddBtn.addEventListener('click', () => openModal(addModal));
     }
@@ -235,7 +227,6 @@ document.addEventListener("DOMContentLoaded", () => {
         openWithdrawBtn.addEventListener('click', () => openModal(withdrawModal));
     }
 
-    // Close modals on close button clicks
     closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const modalId = btn.getAttribute('data-modal');
@@ -244,7 +235,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Close modal if clicking outside modal content
     [addModal, withdrawModal].forEach(modal => {
         if (modal) {
             modal.addEventListener('click', (e) => {
@@ -295,7 +285,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     closeModal(addModal);
                 }, 1500);
 
-                await fetchTransactionsWithPopup(); // Update list and check popups
+                await fetchUserData(); 
+                await fetchTransactionsWithPopup(); 
 
             } catch (err) {
                 statusAdd.textContent = '❌ ' + err.message;
@@ -356,7 +347,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     closeModal(withdrawModal);
                 }, 1500);
 
-                await fetchTransactionsWithPopup(); // Update list and check popups
+                await fetchUserData(); 
+                await fetchTransactionsWithPopup(); 
 
             } catch (err) {
                 statusWithdraw.textContent = '❌ ' + err.message;
@@ -372,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Theme toggle ---
     if (themeToggleBtn && themeIcon) {
-        // FIX: Load theme preference from localStorage on page load (Persistence)
+        // Load theme preference from localStorage on page load (Persistence)
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark-mode') {
             document.body.classList.add('dark-mode');
@@ -387,18 +379,16 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.classList.toggle("dark-mode");
             if (document.body.classList.contains("dark-mode")) {
                 themeIcon.classList.replace("fa-moon", "fa-sun");
-                localStorage.setItem('theme', 'dark-mode'); // FIX: Save theme state
+                localStorage.setItem('theme', 'dark-mode'); 
             } else {
                 themeIcon.classList.replace("fa-sun", "fa-moon");
-                localStorage.setItem('theme', 'light-mode'); // FIX: Save theme state
+                localStorage.setItem('theme', 'light-mode'); 
             }
-            // Trigger TradingView chart refresh if it exists to apply new theme
             window.dispatchEvent(new Event('themeChanged')); 
         });
     }
 
     // --- Sidebar toggle (Hamburger menu) ---
-    // FIX: Wrapped all sidebar logic in a single check for essential elements
     if (sidebar && sidebarToggleBtn && mainContent && mobileOverlay && hamburgerIcon) {
         const mediaQuery = window.matchMedia("(max-width: 768px)");
 
@@ -408,7 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 mainContent.classList.toggle("pushed-mobile");
                 mobileOverlay.classList.toggle("visible");
                 sidebarToggleBtn.classList.toggle("is-active");
-            } else if (dashboardContainer) { // Only collapse main container if it exists (e.g., on dashboard)
+            } else if (dashboardContainer) { 
                 dashboardContainer.classList.toggle("sidebar-collapsed");
                 sidebarToggleBtn.classList.toggle("is-active");
             }
@@ -438,12 +428,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         setInitialSidebarState();
-        // Listener for screen size changes
         mediaQuery.addEventListener("change", setInitialSidebarState); 
     }
 
     // --- Profile dropdown ---
-    if (profileDropdown && dropdownMenu) { // FIX: Conditional check
+    if (profileDropdown && dropdownMenu) { 
         profileDropdown.addEventListener("click", (e) => {
             dropdownMenu.classList.toggle("hidden");
             e.stopPropagation();
@@ -467,26 +456,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ====================================================================
-    // --- CHARTS & WIDGETS (Conditional on container elements) ---
+    // --- WIDGETS (Conditional on container elements) ---
     // ====================================================================
 
     // === TradingView widget ===
     const tradingViewContainer = document.getElementById("tradingview_eurusd");
-    if (tradingViewContainer) { // FIX: Only run if the container exists
+    if (tradingViewContainer) { 
         const loadTradingView = () => {
             const isDarkMode = document.body.classList.contains("dark-mode");
             const theme = isDarkMode ? "dark" : "light";
             
-            // FIX: TradingView widget needs to be re-initialized if theme changes, 
-            // but for simplicity, we'll initialize once here and rely on its built-in
-            // theme sync if possible, or force a reload if necessary.
-            
-            // Check if widget is already loaded 
             if (window.TradingView && window.TradingView.widget) {
-                 // Prevent duplicate script loading
+                 // Already loaded
             } else {
                 let script = document.createElement('script');
-                // FIX: Removed trailing whitespace from URL
                 script.src = 'https://s3.tradingview.com/tv.js'; 
                 script.onload = function () {
                     new TradingView.widget({
@@ -495,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         symbol: "FX:EURUSD",
                         width: "900px",
                         height: 400,
-                        // FIX: Set dynamic theme on load
                         theme: theme 
                     });
                 };
@@ -503,72 +485,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        // Load the widget initially
         loadTradingView();
         
-        // Listen for custom theme change event to potentially reload/update
         window.addEventListener('themeChanged', loadTradingView);
-    }
-
-    // === Chart.js Line Chart ===
-    const ctx = document.getElementById('analyticsChart')?.getContext('2d');
-    if (ctx) { // FIX: Only run if the container exists
-        const chartColor = '#dc691e'; 
-        const tickColor = document.body.classList.contains("dark-mode") ? '#aaa' : '#888';
-        const gridColor = document.body.classList.contains("dark-mode") ? '#333' : '#eee';
-
-        const analyticsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                datasets: [{
-                    label: 'Revenue',
-                    data: [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
-                    borderColor: chartColor, 
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 0,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        ticks: {
-                            callback: value => `$${value / 1000}K`,
-                            color: tickColor
-                        },
-                        grid: {
-                            color: gridColor
-                        }
-                    },
-                    x: {
-                        ticks: { color: tickColor },
-                        grid: { display: false }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const val = context.raw;
-                                return `Revenue: $${val.toLocaleString()}`;
-                            }
-                        }
-                    },
-                    legend: {
-                        labels: {
-                            color: tickColor,
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Simple handler to redraw chart on theme change (optional)
-        window.addEventListener('themeChanged', () => analyticsChart.update());
     }
 
 
@@ -578,7 +497,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initial load
     fetchUserData();
-    // Only fetch transactions if the transaction list element is present
     fetchTransactionsWithPopup(); 
 
     // Poll for updates every 60 seconds (Only poll if we expect dashboard data)
