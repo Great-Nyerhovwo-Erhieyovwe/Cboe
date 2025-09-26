@@ -315,37 +315,38 @@ header .text-content {
     padding: 2rem 0;
 }
 
-/* TradingView Ticker - Glassmorphism Style */
+/* Hide ticker on desktop */
 .tradingview-ticker-container {
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  position: relative;
-  z-index: 50;
+  display: none;
 }
 
-.tradingview-widget-container {
-  width: 100% !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
+/* Show ONLY on mobile/tablet (max-width: 1023px) */
+@media (max-width: 1023px) {
+  .tradingview-ticker-container {
+    display: block;
+    width: 100%;
+    height: 48px;
+    margin: 12px 0;
+    position: relative;
+    z-index: 50;
+  }
 
-/* Hide TradingView copyright if desired (optional) */
-.tradingview-widget-copyright {
-  display: none !important;
-}
+  .tradingview-widget-container {
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    overflow: hidden !important;
+  }
 
-/* Optional: Add subtle hover effect */
-.tradingview-ticker-container:hover .tradingview-widget-container {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  /* Optional: Hide TradingView copyright */
+  .tradingview-widget-copyright {
+    display: none !important;
+  }
 }
 
 /* Image slider */
