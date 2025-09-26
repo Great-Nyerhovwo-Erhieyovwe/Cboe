@@ -1145,53 +1145,10 @@ h4 {
 }
 
 
-/* Counter */
-/* Hide counters on desktop */
-@media (min-width: 1025px) {
-  .counters {
-    display: none !important;
-  }
-}
-
-.counters {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  margin: 2rem 0;
-}
-
-.counter-box {
-  flex: 1 1 150px;
-  background: var(--glass-bg);
-  border-radius: 14px;
-  padding: 1rem;
-  text-align: center;
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  transition: transform 0.3s ease;
-}
-
-.counter-box:hover {
-  transform: translateY(-5px);
-}
-
-.counter-box h3 {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  color: var(--text-secondary);
-}
-
-.counter {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: var(--accent-vibrant);
-  display: block;
-}
-
 /* popups */
 #popup-container {
   position: fixed;
-  bottom: 20px;
+  bottom: 30px;
   right: 20px;
   z-index: 9999;
   display: flex;
