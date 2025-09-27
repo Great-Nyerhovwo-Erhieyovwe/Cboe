@@ -1,5 +1,6 @@
 // --- WARNING: DATA WILL BE LOST ON SERVER RESTART/REDEPLOYMENT (JSON Server Limitation) ---
-// This code has been updated to include Coin/Chain selection functionality.
+// This code has been updated to include Coin/Chain selection functionality,
+// and now includes logic to enforce Admin-set 'isBanned' and 'isFrozen' statuses.
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -17,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    const user = JSON.parse(userData);
+    let user = JSON.parse(userData); // NOTE: Changed 'const user' to 'let user' so it can be updated in fetchUserData
 
     // Optional: Show user name (Conditional check)
     const profileNameEl = document.getElementById('profileName');
@@ -71,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let activeDepositsCount = 0; // Count for Active Deposits
 
     // ====================================================================
-    // --- WALLET DATA (MOCK) & DYNAMIC DISPLAY LOGIC (NEW) ---
+    // --- WALLET DATA (MOCK) & DYNAMIC DISPLAY LOGIC ---
     // ====================================================================
 
     // --- MOCK DATA: REPLACE THESE VALUES WITH YOUR ACTUAL WALLET ADDRESSES AND QR PATHS ---
@@ -256,11 +257,25 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) throw new Error('Failed to load user data');
             const userData = await res.json();
             
+            // 🛑 NEW: BAN CHECK 🛑
+            if (userData.isBanned === true) {
+                alert('🚫 Account Banned: Access has been permanently revoked by the administrator.');
+                // Clear session and redirect to login
+                sessionStorage.clear();
+                window.location.href = '../login/login.html'; 
+                return; // STOP execution
+            }
+
+            // NOTE: Update the local 'user' object and session storage with the latest status
+            // This is critical for the transaction listeners to check 'isFrozen'
+            user = { ...user, ...userData }; // Merge old user data with new fetched data
+            sessionStorage.setItem('user', JSON.stringify(user)); // Update session storage
+
             // Update all state variables with fetched data (CRITICAL SYNCHRONIZATION POINT)
             balance = userData.balance || 0;
             roi = userData.roi || 0;
-            activeInvestments = userData.activeTrades || 0; // Matches Active Investment/Trades
-            activeDepositsCount = userData.deposits || 0; // Matches Active Deposits count
+            activeInvestments = userData.activeTrades || 0; 
+            activeDepositsCount = userData.deposits || 0; 
             
             // Synchronize the UI elements
             updateDashboard();
@@ -341,6 +356,13 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmAddBtn.addEventListener('click', async (e) => {
             e.preventDefault();
 
+            // 🥶 NEW: TRANSACTION FREEZE CHECK 🥶
+            if (user.isFrozen === true) {
+                statusAdd.textContent = '❌ Transactions are currently frozen by the administrator.';
+                statusAdd.style.color = 'red';
+                return; // STOP execution
+            }
+
             const amount = parseFloat(addAmountInput.value);
             if (isNaN(amount) || amount <= 0) {
                 statusAdd.textContent = " ! Please enter a valid amount.";
@@ -348,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            // --- NEW: Capture selected Coin and Network ---
+            // Capture selected Coin and Network
             const coinType = coinTypeSelect.value;
             const networkType = networkTypeSelect.value;
             
@@ -366,8 +388,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 userId: user.id,
                 type: 'deposit',
                 amount: amount,
-                coin: coinType,        // NEW
-                network: networkType,  // NEW
+                coin: coinType,       
+                network: networkType, 
                 status: 'pending',
                 createdAt: new Date().toISOString()
             };
@@ -404,6 +426,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (confirmWithdrawBtn && withdrawAmountInput && statusWithdraw) {
         confirmWithdrawBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+
+            // 🥶 NEW: TRANSACTION FREEZE CHECK 🥶
+            if (user.isFrozen === true) {
+                statusWithdraw.textContent = '❌ Transactions are currently frozen by the administrator.';
+                statusWithdraw.style.color = 'red';
+                return; // STOP execution
+            }
 
             const amount = parseFloat(withdrawAmountInput.value);
             const walletAddress = withdrawModal.querySelector('input[type="text"]').value.trim();
