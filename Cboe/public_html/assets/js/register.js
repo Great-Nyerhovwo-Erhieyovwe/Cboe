@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const API_USERS = 'https://cboejsonserver.onrender.com/api/users';
+
     const form = document.getElementById('registrationForm');
     const fullNameInput = document.getElementById('fullName');
     const usernameInput = document.getElementById('username');
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (password.length >= 8) {
             strength += 1;
         } else {
-            feedback += 'Password should be at least 8 characters.';
+            feedback += 'Password should be at least 8 characters. ';
         }
         if (/[A-Z]/.test(password)) {
             strength += 1;
@@ -153,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (/[0-9]/.test(password)) {
             strength += 1;
         } else {
-            feedback += 'Include numbers';
+            feedback += 'Include numbers. ';
         }
         if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password)) {
             strength += 1;
@@ -263,29 +265,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = passwordInput.value;
 
             try {
-                // Check if username or email already exists in db
-                const response = await fetch(`https://cboejsonserver.onrender.com/api/users?username=${username}&email=${email}`);
-                const existingUsers = await response.json();
+                // 1. Check if email already exists (essential for blocking deleted users)
+                const emailCheckRes = await fetch(`${API_USERS}?email=${encodeURIComponent(email)}`);
+                if (!emailCheckRes.ok) throw new Error('API server error during email check.');
 
-                const usernameExists = existingUsers.some(user => user.username === username);
-                const emailExists = existingUsers.some(user => user.email === email);
-
-                if (usernameExists || emailExists) {
-                    if (usernameExists) displayError(usernameError, 'Username is already taken.');
-                    if (emailExists) displayError(emailError, 'Email is already registered.');
-                    return;
+                const existingUsersByEmail = await emailCheckRes.json();
+                
+                // 🛑 NEW CHECK: BLOCKS RE-REGISTRATION BY DELETED USERS USING THE SAME EMAIL 🛑
+                if (existingUsersByEmail.length > 0) {
+                    displayError(emailError, 'This email is already registered. If this was a mistake, please contact support.');
+                    return; // STOP execution
                 }
 
-                // If not exists, register new user
+                // 2. Check if username exists (This must be done separately if we want to provide specific feedback for username vs. email)
+                const usernameCheckRes = await fetch(`${API_USERS}?username=${encodeURIComponent(username)}`);
+                if (!usernameCheckRes.ok) throw new Error('API server error during username check.');
+
+                const existingUsersByUsername = await usernameCheckRes.json();
+
+                if (existingUsersByUsername.length > 0) {
+                    displayError(usernameError, 'Username is already taken.');
+                    return; // STOP execution
+                }
+
+                // 3. If neither email nor username exists, register new user
                 const newUser = {
                     fullName,
                     username,
                     email,
                     phone,
-                    password // In real-world apps, never store raw passwords!
+                    password, // In real-world apps, never store raw passwords!
+                    // Initialize new user with required default fields for dashboard and security
+                    balance: 0,
+                    roi: 0,
+                    deposits: 0,
+                    activeTrades: 0,
+                    isFrozen: false,
+                    isBanned: false
                 };
 
-                const postRes = await fetch(`https://cboejsonserver.onrender.com/api/users`, {
+                const postRes = await fetch(API_USERS, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -298,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Show success modal
-                modalMessage.textContent = 'Thank you for signing up! You will be redirected to the login page in 3 seconds.';
+                modalMessage.textContent = '✅ Registration successful! You will be redirected to the login page in 3 seconds.';
                 modal.style.display = 'block';
 
                 setTimeout(() => {
@@ -324,18 +343,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (err) {
                 console.error('Error:', err);
-                modalMessage.textContent = 'An error occurred while registering. Please try again.';
+                modalMessage.textContent = '❌ An error occurred while registering. Please try again.';
                 modal.style.display = 'block';
             }
 
         } else {
-            modalMessage.textContent = 'Please correct the errors in the form.';
+            modalMessage.textContent = '⚠️ Please correct the errors in the form.';
             modal.style.display = 'block';
         }
     });
 
 
-    /* Eye toggle */
+    /* Eye toggle - commented out in original, kept commented */
     // const toggles = document.querySelectorAll('.toggle-eye');
 
     // toggles.forEach(toggle => {
