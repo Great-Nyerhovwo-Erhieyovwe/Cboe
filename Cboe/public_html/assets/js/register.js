@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // 👁️ Toggle password visibility for both fields
+    /*
     const setupPasswordToggle = (toggleElement, inputElement) => {
         if (toggleElement && inputElement) {
             toggleElement.addEventListener('click', () => {
@@ -111,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupPasswordToggle(togglePwd, passwordInput);
     setupPasswordToggle(toggleConfirmPwd, confirmPasswordInput);
+    */
     
     // utility function to display error messages
     const displayError = (element, message) => {
@@ -122,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputElement.tagName === 'LABEL') {
                 inputElement = inputElement.nextElementSibling;
             }
-            if (inputElement && inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT') {
+            if (inputElement && (inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT')) {
                 inputElement.classList.add('invalid');
                 inputElement.classList.remove('valid');
             }
@@ -133,12 +135,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearError = (element) => {
         element.textContent = '';
         element.style.display = 'none';
-         if (element.previousElementSibling) {
+          if (element.previousElementSibling) {
             let inputElement = element.previousElementSibling;
             if (inputElement.tagName === 'LABEL') {
                 inputElement = inputElement.nextElementSibling;
             }
-            if (inputElement && inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT') {
+            if (inputElement && (inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT')) {
                 inputElement.classList.remove('invalid');
                 inputElement.classList.add('valid');
             }
@@ -161,14 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 💬 MODIFIED: Username check now uses Firestore
+    // 💬 MODIFIED: Username check now uses Firestore and standard error display
     // Username check is an ASYNCHRONOUS operation now
     const checkUsernameAvailability = async (username) => {
+        // 1. Clear previous errors/feedback
+        clearError(usernameError);
+        usernameSuggestions.innerHTML = '';
+        usernameSuggestions.style.display = 'none';
+        usernameInput.classList.remove('valid', 'invalid');
+
+        if (username === '') {
+            displayError(usernameError, 'Username is required.');
+            usernameFeedback.textContent = '';
+            return false;
+        }
+
         if (username.length < 6) {
-            usernameFeedback.textContent = 'Username must be at least 6 characters.';
+            displayError(usernameError, 'Username must be at least 6 characters.');
+            usernameFeedback.textContent = 'Minimum 6 characters required.';
             usernameFeedback.classList.remove('valid');
             return false;
         }
+
+        usernameFeedback.textContent = 'Checking availability...';
+        usernameFeedback.classList.remove('valid');
 
         const usernameQuery = query(collection(db, "users"), where("username", "==", username));
         
@@ -176,33 +194,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const querySnapshot = await getDocs(usernameQuery);
 
             if (querySnapshot.empty) {
+                // ✅ AVAILABLE
                 usernameFeedback.textContent = 'Username available.';
                 usernameFeedback.classList.add('valid');
-                usernameInput.classList.remove('invalid');
                 usernameInput.classList.add('valid');
-                usernameSuggestions.innerHTML = '';
-                usernameSuggestions.style.display = 'none';
                 return true;
             } else {
-                usernameFeedback.textContent = 'This username is taken.';
+                // ❌ TAKEN - Use the main error display for a critical failure
+                displayError(usernameError, 'This username is already taken.');
+                usernameFeedback.textContent = 'Username taken.';
                 usernameFeedback.classList.remove('valid');
                 usernameInput.classList.add('invalid');
-                usernameInput.classList.remove('valid');
 
-                // Generate suggestions (still client-side for immediate feedback)
-                usernameSuggestions.innerHTML = '';
+                // Generate and display suggestions
                 const suggestions = [
                     username + Math.floor(Math.random() * 100),
                     username + '_01',
-                    username + '_user',
+                    username + 'user',
                 ];
+                usernameSuggestions.innerHTML = 'Suggestions:';
+                
+                // Add click listeners to suggestions
                 suggestions.forEach(s => {
                     const li = document.createElement('li');
                     li.textContent = s;
+                    li.className = 'suggestion-item cursor-pointer hover:bg-gray-100 p-1 rounded-md';
                     li.addEventListener('click', () => {
                         usernameInput.value = s;
                         usernameInput.dispatchEvent(new Event('input')); // Re-check availability on select
-                        usernameSuggestions.style.display = 'none';
                     });
                     usernameSuggestions.appendChild(li);
                 });
@@ -211,7 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Error checking username:", error);
-            usernameFeedback.textContent = 'Error checking availability.';
+            displayError(usernameError, 'Error checking availability. Try again.');
+            usernameFeedback.textContent = 'Error during check.';
             usernameFeedback.classList.remove('valid');
             return false;
         }
@@ -226,8 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
             usernameFeedback.textContent = '';
             usernameSuggestions.innerHTML = '';
             usernameSuggestions.style.display = 'none';
+            clearError(usernameError);
         }
     });
+
 
     // Email Validation (synchronous check for format only)
     const validateEmail = () => {
@@ -249,8 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
     phoneInput.addEventListener('input', () => {
         const value = phoneInput.value.trim();
         const phoneRegex = /^\+?[0-9]{7,15}$/; // supports international format
-        if (!phoneRegex.test(value)) {
+        if (!phoneRegex.test(value) && value.length > 0) {
             phoneFeedback.textContent = 'Enter a valid phone number (e.g., +1234567890)';
+            phoneFeedback.classList.remove('valid');
+        } else if (value.length === 0) {
+            phoneFeedback.textContent = '';
             phoneFeedback.classList.remove('valid');
         } else {
             phoneFeedback.textContent = 'Valid phone number';
@@ -369,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    //  Real-time validation
+    //  Real-time validation
     fullNameInput.addEventListener('input', validateFullName);
     emailInput.addEventListener('input', validateEmail);
     // Note: Username check handled in its own async listener above
@@ -476,7 +501,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         errorMessage = 'The password is too weak. Please use a stronger password.';
                         break;
                     default:
-                        errorMessage = error.message.replace('Firebase: ', '');
+                        // Fallback to error message, cleaning up "Firebase: " prefix
+                        errorMessage = error.message.replace('Firebase: ', '').replace('(auth/', '').replace(').', '');
                         break;
                 }
                 showModal('Registration Failed', errorMessage, true);
@@ -487,5 +513,4 @@ document.addEventListener('DOMContentLoaded', () => {
             showModal('Validation Error', '⚠️ Please correct the errors marked in the form.', true);
         }
     });
-
 });
