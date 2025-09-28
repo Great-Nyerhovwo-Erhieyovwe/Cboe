@@ -6,13 +6,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cboe | Deposit</title>
     <link rel="stylesheet" href="../assets/css/dashboard.css">
-    <!-- font awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-</head>
+
+    <script type="module">
+        // Import the necessary Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+            authDomain: "cboefirebaseserver.firebaseapp.com",
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
+            projectId: "cboefirebaseserver",
+            storageBucket: "cboefirebaseserver.firebasestorage.app",
+            messagingSenderId: "755491003217",
+            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+            measurementId: "G-FCZEERNC06"
+        };
+
+        // Initialize Firebase and Services
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Make core services accessible to other script modules
+        window.firebaseApp = app;
+        window.db = db;
+        window.auth = auth;
+
+        // 🛑 AUTHENTICATION REDIRECT CHECK 🛑
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // User is not signed in, redirect to login page
+                console.log("No user signed in. Redirecting to login.");
+                window.location.replace("../login/login.html");
+            } else {
+                console.log(`User ${user.uid} is signed in.`);
+                window.currentUser = user; // Store the user object globally for data fetching
+            }
+        });
+
+        // 🛑 LOGOUT HANDLER 🛑
+        window.handleLogout = async () => {
+            try {
+                await signOut(auth);
+                // The onAuthStateChanged listener handles the redirection after sign out
+            } catch (error) {
+                console.error("Logout failed:", error);
+                alert("Logout failed. Please try again.");
+            }
+        };
+    </script>
+    </head>
 
 <body class="light-mode">
     <div id="dashboard-container">
-        <!-- sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header">
                 <h2>Cboe</h2>
@@ -26,14 +76,12 @@
                                 class="fa-solid fa-money-bill-transfer"></i><span>Deposit</span></a></li>
                     <li><a href="#"><i class="fas arrow-up"></i><span>Withdraw</span></a></li>
 
-                    <!-- <h3>General</h3> -->
                     <li><a href="settings.html"><i class="fa-solid fa-user-gear"></i><span>Settings</span></a></li>
                     <li><a href="support.html"><i class="fa-solid fa-ticket"></i><span>Support</span></a></li>
-                    <li><a href="../login/login.html"><i class="fa-solid fa-arrow-left"></i><span>Logout</span></a></li>
+                    <li><a href="javascript:void(0);" onclick="handleLogout();"><i class="fa-solid fa-arrow-left"></i><span>Logout</span></a></li>
                 </ul>
             </nav>
 
-            <!-- theme toggle -->
             <div class="sidebar-footer">
                 <button id="theme-toggle" class="sidebar-btn">
                     <i class="fas fa-moon"></i><span>Toggle Theme</span>
@@ -44,9 +92,7 @@
             </div>
         </aside>
 
-        <!-- main content area -->
         <div id="main-content">
-            <!-- top nav bar -->
             <header id="navbar">
                 <div class="navbar-left">
                     <button id="sidebar-toggle" class="hamburger-btn">
@@ -58,18 +104,17 @@
                 <div class="navbar-left">
                     <div id="profile-dropdown" class="profile-container">
                         <div class="profile-info">
-                       <span id="profileName"></span>
+                            <span id="profileName"></span>
                             <img src="https://i.pravatar.cc/150?u=emmalex" alt="User Avatar" class="profile-avatar" />
                         </div>
                         <div class="dropdown-menu hidden">
                             <a href="#">Settings</a>
-                            <a href="#">Logout</a>
+                            <a href="javascript:void(0);" onclick="handleLogout();">Logout</a>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <!-- page content for notes -->
             <main id="content">
                 <h1 id="page-title">Deposit</h1>
 
@@ -80,8 +125,9 @@
                     <div class="form-box">
                         <h2>Deposit Funds</h2>
                         <form id="depositForm" enctype="multipart/form-data">
-                            <label> Wallet Address</label>
-                            <input type="text" value="0xABC123...XYZ" readonly>
+                            <label>Deposit Wallet Address (USDT TRC-20)</label> 
+                            <input type="text" id="depositWalletAddress" value="Loading..." readonly>
+                            
                             <label for="amount">Amount (USD)</label>
                             <input type="number" id="addAmount" name="amount" required>
 
@@ -94,51 +140,37 @@
                             </select>
 
                             <label for="network">Network</label>
-                            <select>
-                                <option value="crypto">USDT</option>
-                                <option value="crypto" disabled>BTC (Available soon)</option>
-                                <option value="crypto" disabled>ETH (Available soon)</option>
+                            <select id="networkSelect">
+                                <option value="USDT">USDT (TRC-20)</option>
+                                <option value="BTC" disabled>BTC (Available soon)</option>
+                                <option value="ETH" disabled>ETH (Available soon)</option>
                             </select>
 
                             <label for="proof">Upload Proof of Payment</label>
-                            <input type="file" id="proof" name="proof" accept="image/*,application/pdf">
-                            <!-- required -->
+                            <input type="file" id="proof" name="proof" accept="image/*,application/pdf" required>
 
-                            <button class="confirm-btn confirmAdd" id="confirmAdd">Confirm</button>
+                            <button type="submit" class="confirm-btn confirmAdd" id="confirmAdd">Confirm Deposit</button>
 
                             <p class="status-msg" id="statusAdd"></p>
                         </form>
                     </div>
                 </div>
 
-                <!-- transaction List -->
                 <div class="card flexible1">
                     <div class="card-icon"><i class="fas fa-users"></i></div>
                     <div class="card-info">
                         <span class="card-title">Transaction History</span>
                         <ul id="transactionList" style="list-style: none;">
-                            <li></li>
-                            <li></li>
-                        </ul>
+                            </ul>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- mobile Overlay -->
     <div id="mobile-overlay" class="mobile-overlay hidden"></div>
 
-
-    <!-- General Notification Modal -->
-    <!-- <div id="statusModal" class="status-modal">
-        <div class="status-content">
-            <span id="closeStatus" class="close-btn">&times;</span>
-            <h3 id="statusTitle">Processing...</h3>
-            <p id="statusMessage">Your deposit is being processed.</p>
-        </div>
-     </div> -->
-    <script src="../assets/js/dashboard.js"></script>
+    <script type="module" src="../assets/js/deposit.js"></script>
 </body>
 
 </html>
