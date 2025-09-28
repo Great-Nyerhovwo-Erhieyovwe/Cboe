@@ -10,12 +10,20 @@
     <div class="admin-login-container">
         <h2>Admin Login</h2>
         <form id="adminLoginForm">
-            <input type="text" id="adminUsername" placeholder="Username" required>
-            <input type="password" id="adminPassword" placeholder="password" required>
+            <input type="email" id="adminEmail" placeholder="Admin Email" required> 
+            
+            <input type="password" id="adminPassword" placeholder="Password" required>
+            
             <button type="submit">Login</button>
             <p id="adminLoginError" class="error-msg"></p>
         </form>
     </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <script src="./assets/js/firebase-config.js"></script> 
+    
     <script src="./assets/js/admin.js"></script>
 </body>
 </html>
