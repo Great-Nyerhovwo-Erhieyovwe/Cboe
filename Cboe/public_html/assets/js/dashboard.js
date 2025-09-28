@@ -1,29 +1,42 @@
-// --- WARNING: DATA WILL BE LOST ON SERVER RESTART/REDEPLOYMENT (JSON Server Limitation) ---
-// This code has been updated to include Coin/Chain selection functionality,
-// and now includes logic to enforce Admin-set 'isBanned' and 'isFrozen' statuses.
+// --- FIREBASE FIRESTORE REFACTOR ---
+// This script now relies on the global window.db and window.auth objects 
+// set in the containing HTML file (dashboard.html).
+
+import { 
+    doc, 
+    getDoc, 
+    collection, 
+    query, 
+    where, 
+    orderBy, 
+    limit, 
+    getDocs, 
+    addDoc 
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+// Global Firestore/Auth objects from the HTML initialization script
+const db = window.db; 
+const auth = window.auth;
+
+
+// ====================================================================
+// --- GLOBAL INIT CHECK AND USER DATA (No more sessionStorage checks here) ---
+// ====================================================================
+
+// NOTE: We rely on the parent HTML's onAuthStateChanged listener to ensure a user is logged in.
+// window.currentUser is set in the HTML's Firebase script upon successful login.
+let user = window.currentUser || auth.currentUser; 
+let userId = user ? user.uid : null; 
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Re-check after DOM is loaded in case the Auth listener resolved later
+    user = window.currentUser || auth.currentUser;
+    userId = user ? user.uid : null;
 
-    // Global Constants
-    const API_BASE = "https://cboejsonserver.onrender.com/api"; 
-    const API_USERS = `${API_BASE}/users`;
-    const API_TRANSACTIONS = `${API_BASE}/transactions`;
-
-    // ===== LOGIN VALIDATION (Essential for all pages) =====
-    const isUser = sessionStorage.getItem('isUser');
-    const userData = sessionStorage.getItem('user');
-
-    if (!isUser || !userData) {
-        window.location.href = "../login/login.html";
-        return;
-    }
-
-    let user = JSON.parse(userData); // NOTE: Changed 'const user' to 'let user' so it can be updated in fetchUserData
-
-    // Optional: Show user name (Conditional check)
-    const profileNameEl = document.getElementById('profileName');
-    if (profileNameEl && user.username) {
-        profileNameEl.textContent = `Welcome, ${user.username}`; 
+    if (!userId || !db) {
+        console.error("Firebase services or User ID not available. UI elements will not load.");
+        // The HTML script should have already redirected the user, but this guards the functions.
+        return; 
     }
 
     // --- Global DOM Elements ---
@@ -39,9 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const dashboardContainer = document.getElementById("dashboard-container"); 
 
     // --- Dashboard/Modal Specific Elements ---
+    const profileNameEl = document.getElementById('profileName');
     const balanceAmountEl = document.getElementById('balanceAmount');
     const roiEl = document.getElementById('roi');
-    const activeInvestmentEl = document.getElementById('activeInvestment'); 
+    const activeInvestmentEl = document.getElementById('initialInvestment'); // Corrected ID
     const activeDepositEl = document.getElementById('activeDeposit'); 
     const transactionList = document.getElementById('transactionList');
 
@@ -58,55 +72,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusAdd = document.getElementById('statusAdd');
     const statusWithdraw = document.getElementById('statusWithdraw');
 
-    // --- NEW DEPOSIT MODAL ELEMENTS ---
+    // --- NEW DEPOSIT MODAL ELEMENTS (Wallet Config) ---
     const coinTypeSelect = document.getElementById('coinType');
     const networkTypeSelect = document.getElementById('networkType');
     const walletAddressDisplay = document.getElementById('walletAddressDisplay');
     const qrCodeImage = document.getElementById('qrCodeImage');
-
-
-    // State Variables (Mapping to API response fields)
-    let balance = 0;
-    let roi = 0;
-    let activeInvestments = 0; // Amount for Active Investment/Trades
-    let activeDepositsCount = 0; // Count for Active Deposits
-
+    
+    // --- State Variables ---
+    let userProfile = {}; // Store the Firestore user document here
+    
     // ====================================================================
-    // --- WALLET DATA (MOCK) & DYNAMIC DISPLAY LOGIC ---
+    // --- FIRESTORE WALLET CONFIG (Dynamic Data Fetch) ---
     // ====================================================================
 
-    // --- MOCK DATA: REPLACE THESE VALUES WITH YOUR ACTUAL WALLET ADDRESSES AND QR PATHS ---
-    const WALLET_DATA = {
-        'USDT': {
-            'TRC-20': { address: 'T9yF....3vNq', qr_path: '../assets/qr_usdt_trc20.png' },
-            'ERC-20': { address: '0x32A....001b', qr_path: '../assets/qr_usdt_erc20.png' },
-            'BEP-20': { address: '0xBEF....77cD', qr_path: '../assets/qr_usdt_bep20.png' },
-        },
-        'BTC': {
-            'Bitcoin': { address: '1P5N....hJvA', qr_path: '../assets/IMG_3817.png' }, // Your BTC QR code
-        },
-        'ETH': {
-            'ERC-20': { address: '0x1A2....c8C9', qr_path: '../assets/qr_eth_erc20.png' },
+    let WALLET_CONFIG = {};
+    const WALLET_CONFIG_DOC = doc(db, "config", "wallet");
+    
+    // Fetch and cache the admin-set wallet configuration
+    async function fetchWalletConfig() {
+        try {
+            const docSnap = await getDoc(WALLET_CONFIG_DOC);
+            if (docSnap.exists()) {
+                // The structure should be: { "USDT": { "TRC-20": { address: "...", qr_path: "..." }, ... } }
+                WALLET_CONFIG = docSnap.data();
+                updateNetworkOptions(); // Initialize the dropdowns
+            } else {
+                console.warn("Wallet configuration document 'config/wallet' not found.");
+                WALLET_CONFIG = {};
+            }
+        } catch (error) {
+            console.error("Error fetching wallet config:", error);
         }
-    };
+    }
 
     function updateNetworkOptions() {
         if (!coinTypeSelect || !networkTypeSelect) return;
         
         const selectedCoin = coinTypeSelect.value;
-        const networks = WALLET_DATA[selectedCoin];
+        const networks = WALLET_CONFIG[selectedCoin];
         
         // Clear existing options
         networkTypeSelect.innerHTML = ''; 
 
         // Add new options for the selected coin
-        for (const network in networks) {
-            const option = document.createElement('option');
-            option.value = network;
-            option.textContent = network;
-            networkTypeSelect.appendChild(option);
+        if (networks) {
+            for (const network in networks) {
+                const option = document.createElement('option');
+                option.value = network;
+                option.textContent = network;
+                networkTypeSelect.appendChild(option);
+            }
         }
-        // Update the address and QR code after updating networks
         updateDepositDisplay();
     }
 
@@ -116,16 +132,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedCoin = coinTypeSelect.value;
         const selectedNetwork = networkTypeSelect.value;
 
-        const data = WALLET_DATA[selectedCoin]?.[selectedNetwork];
+        const data = WALLET_CONFIG[selectedCoin]?.[selectedNetwork];
 
-        if (data) {
+        if (data && data.address) {
             walletAddressDisplay.textContent = data.address;
-            qrCodeImage.src = data.qr_path;
-            
-            // Show/hide the QR code based on whether a path is defined
-            qrCodeImage.parentElement.style.display = data.qr_path ? 'block' : 'none';
+            // NOTE: Assuming qr_path contains the correct public image URL from Storage or elsewhere
+            qrCodeImage.src = data.qr_path || '../assets/IMG_3817.png'; 
+            qrCodeImage.parentElement.style.display = 'block';
         } else {
-            walletAddressDisplay.textContent = 'Please select a valid combination.';
+            walletAddressDisplay.textContent = 'Configuration not available.';
             qrCodeImage.src = '';
             qrCodeImage.parentElement.style.display = 'none';
         }
@@ -135,15 +150,291 @@ document.addEventListener("DOMContentLoaded", () => {
     if (coinTypeSelect && networkTypeSelect) {
         coinTypeSelect.addEventListener('change', updateNetworkOptions);
         networkTypeSelect.addEventListener('change', updateDepositDisplay);
+    }
+    
+    // ====================================================================
+    // --- FIRESTORE DATA FUNCTIONS ---
+    // ====================================================================
+
+    function formatUSD(amount) {
+        return `$${Number(amount).toFixed(2)}`;
+    }
+
+    // PRIMARY DATA FETCH FUNCTION - SYNCS ALL METRICS
+    async function fetchUserData() {
+        try {
+            const userDocRef = doc(db, "users", userId);
+            const docSnap = await getDoc(userDocRef);
+
+            if (!docSnap.exists()) {
+                console.error('User document not found for ID:', userId);
+                // Consider logging out the user if their data record is missing
+                return;
+            }
+
+            const userData = docSnap.data();
+            userProfile = userData; // Update global state
+            
+            // 🛑 BAN CHECK (Immediate action) 🛑
+            if (userData.isBanned === true) {
+                alert('🚫 Account Banned: Access has been permanently revoked by the administrator.');
+                // Clear the Firebase session (handled by the HTML script) and redirect
+                window.handleLogout(); 
+                return; 
+            }
+
+            // Update UI elements
+            if (profileNameEl) {
+                const name = userData.username || user.email || 'User';
+                profileNameEl.textContent = `Welcome, ${name}`;
+            }
+
+            // Update all dashboard metrics
+            const balance = userData.balance || 0;
+            const roi = userData.roi || 0;
+            const activeInvestments = userData.activeTrades || 0; // Assuming activeTrades stores the value/count
+            const activeDepositsCount = userData.deposits || 0; // Assuming deposits stores the count
+
+            if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
+            if (roiEl) roiEl.textContent = `${formatUSD(roi)} (${(roi * 100 / (userData.initialDeposit || 1)).toFixed(2)}%)`;
+            if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
+            if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
+            
+        } catch (err) {
+            console.error('Error loading user data:', err);
+        }
+    }
+
+    function renderTransactions(transactions) {
+        if (!transactionList) return; 
+
+        transactionList.innerHTML = ''; 
         
-        // Initial call to set up the default view (e.g., BTC/Bitcoin)
-        updateNetworkOptions(); 
+        // Render up to 5 latest transactions (can be adjusted)
+        transactions.slice(0, 5).forEach(tx => {
+            const li = document.createElement('li');
+            
+            // Convert Firestore Timestamp or Date string to a readable format
+            let date;
+            if (tx.createdAt && tx.createdAt.toDate) {
+                date = tx.createdAt.toDate().toLocaleString();
+            } else if (tx.createdAt) {
+                date = new Date(tx.createdAt).toLocaleString();
+            } else {
+                date = new Date().toLocaleString();
+            }
+            
+            li.textContent = `${date}: ${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${formatUSD(tx.amount)} — Status: ${tx.status}`;
+            transactionList.prepend(li);
+        });
+    }
+    
+    // --- TRANSACTION FETCH AND POPUP LOGIC ---
+    // NOTE: This now uses Firestore collection querying.
+    let notifiedTransactionIds = new Set();
+    const NOTIFIED_KEY = `notifiedTransactions_${userId}`; 
+    
+    const storedNotified = localStorage.getItem(NOTIFIED_KEY); 
+    if (storedNotified) {
+        try {
+            notifiedTransactionIds = new Set(JSON.parse(storedNotified));
+        } catch (e) {
+            console.error("Failed to parse notified transactions from localStorage:", e);
+        }
+    }
+
+    async function fetchTransactionsWithPopup() {
+        if (!transactionList) return; 
+
+        try {
+            const transactionsCollection = collection(db, "transactions");
+            // Query: transactions WHERE userId == currentUser.uid, ordered by createdAt, limit to 20
+            const q = query(
+                transactionsCollection, 
+                where("userId", "==", userId), 
+                orderBy("createdAt", "desc"), 
+                limit(20) // Limit the fetch size
+            );
+            
+            const querySnapshot = await getDocs(q);
+            const transactions = [];
+
+            querySnapshot.forEach(doc => {
+                const tx = { id: doc.id, ...doc.data() };
+                transactions.push(tx);
+
+                // Check for new notifications
+                if (
+                    (tx.status === 'approved' || tx.status === 'declined') &&
+                    !notifiedTransactionIds.has(tx.id)
+                ) {
+                    const action = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+                    const isSuccess = tx.status === 'approved';
+                    const statusMsg = isSuccess ? 'approved ✅' : 'declined ❌';
+                    showPopup(`${action} of ${formatUSD(tx.amount)} was ${statusMsg}`, isSuccess);
+
+                    notifiedTransactionIds.add(tx.id);
+                }
+            });
+
+            // Save the list of notified IDs back to local storage
+            localStorage.setItem(
+                NOTIFIED_KEY,
+                JSON.stringify([...notifiedTransactionIds])
+            );
+
+            renderTransactions(transactions);
+            
+        } catch (err) {
+            console.error('Error loading transactions:', err);
+        }
+    }
+
+
+    // ====================================================================
+    // --- MODAL AND SUBMISSION LOGIC (Firestore Write) ---
+    // ====================================================================
+
+    // --- Add funds (Firestore) ---
+    if (confirmAddBtn && addAmountInput && statusAdd) {
+        confirmAddBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            // 🥶 TRANSACTION FREEZE CHECK 🥶
+            if (userProfile.isFrozen === true) {
+                statusAdd.textContent = '❌ Transactions are currently frozen by the administrator.';
+                statusAdd.style.color = 'red';
+                return; 
+            }
+
+            const amount = parseFloat(addAmountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                statusAdd.textContent = " ! Please enter a valid amount.";
+                statusAdd.style.color = 'red';
+                return;
+            }
+            
+            const coinType = coinTypeSelect.value;
+            const networkType = networkTypeSelect.value;
+            
+            if (!coinType || !networkType) {
+                 statusAdd.textContent = " ! Please select a Coin Type and Network.";
+                 statusAdd.style.color = 'red';
+                 return;
+            }
+
+            statusAdd.textContent = " ⏳ Submitting request...";
+            statusAdd.style.color = 'black';
+
+            // Data structure for the new Firestore document
+            const newTransaction = {
+                userId: userId,
+                type: 'deposit',
+                amount: amount,
+                coin: coinType, 
+                network: networkType, 
+                status: 'pending',
+                createdAt: new Date() // Firestore automatically converts this to Timestamp
+            };
+
+            try {
+                // Add the document to the 'transactions' collection
+                await addDoc(collection(db, "transactions"), newTransaction);
+
+                statusAdd.textContent = " ✅ Deposit request submitted!";
+                statusAdd.style.color = 'green';
+                addAmountInput.value = '';
+
+                setTimeout(() => {
+                    closeModal(addModal);
+                }, 1500);
+
+                // SYNCHRONIZATION CALLS
+                await fetchUserData(); // Update balance/deposit count
+                await fetchTransactionsWithPopup(); // Update transaction history and popups
+
+            } catch (err) {
+                console.error("Firestore Deposit Error:", err);
+                statusAdd.textContent = '❌ Failed to submit deposit: ' + err.message;
+                statusAdd.style.color = 'red';
+            }
+        });
+    }
+
+    // --- Withdraw funds (Firestore) ---
+    if (confirmWithdrawBtn && withdrawAmountInput && statusWithdraw) {
+        confirmWithdrawBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            // 🥶 TRANSACTION FREEZE CHECK 🥶
+            if (userProfile.isFrozen === true) {
+                statusWithdraw.textContent = '❌ Transactions are currently frozen by the administrator.';
+                statusWithdraw.style.color = 'red';
+                return; 
+            }
+
+            const amount = parseFloat(withdrawAmountInput.value);
+            // Assuming wallet address input is the first text input in the withdrawModal
+            const walletInput = withdrawModal.querySelector('input[type="text"]');
+            const walletAddress = walletInput ? walletInput.value.trim() : '';
+
+            if (!walletAddress) {
+                statusWithdraw.textContent = ' ! Please enter your wallet address';
+                statusWithdraw.style.color = 'red';
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                statusWithdraw.textContent = " ! Enter a valid amount.";
+                statusWithdraw.style.color = 'red';
+                return;
+            }
+            if (amount > (userProfile.balance || 0)) { // Check against current balance
+                statusWithdraw.textContent = " ! Insufficient balance.";
+                statusWithdraw.style.color = 'red';
+                return;
+            }
+
+            statusWithdraw.textContent = " ⏳ Submitting request...";
+            statusWithdraw.style.color = 'black';
+
+            const newTransaction = {
+                userId: userId,
+                type: 'withdrawal',
+                amount: amount,
+                walletAddress: walletAddress, 
+                status: 'pending',
+                createdAt: new Date()
+            };
+
+            try {
+                // Add the document to the 'transactions' collection
+                await addDoc(collection(db, "transactions"), newTransaction);
+
+                statusWithdraw.textContent = " ✅ Withdrawal request submitted!";
+                statusWithdraw.style.color = 'green';
+                withdrawAmountInput.value = '';
+                walletInput.value = ''; // Clear wallet input
+
+                setTimeout(() => {
+                    closeModal(withdrawModal);
+                }, 1500);
+
+                // SYNCHRONIZATION CALLS
+                await fetchUserData(); 
+                await fetchTransactionsWithPopup(); 
+
+            } catch (err) {
+                console.error("Firestore Withdrawal Error:", err);
+                statusWithdraw.textContent = '❌ Failed to submit withdrawal: ' + err.message;
+                statusWithdraw.style.color = 'red';
+            }
+        });
     }
 
     // ====================================================================
-    // --- HELPER FUNCTIONS ---
+    // --- HELPER FUNCTIONS (Left mostly unchanged as they are DOM-specific) ---
     // ====================================================================
-
+    
     function openModal(modal) {
         if (modal) {
             modal.style.display = 'flex';
@@ -171,32 +462,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (walletInput) walletInput.value = '';
         }
     }
-
-    function formatUSD(amount) {
-        return `$${Number(amount).toFixed(2)}`;
-    }
-
-    // SYNCHRONIZATION HUB FOR METRICS
-    function updateDashboard() {
-        if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
-        if (roiEl) roiEl.textContent = formatUSD(roi);
-        if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
-        if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
-    }
-
-    function renderTransactions(transactions) {
-        if (!transactionList) return; 
-
-        transactionList.innerHTML = ''; 
-
-        transactions.forEach(tx => {
-            const li = document.createElement('li');
-            const date = new Date(tx.createdAt || tx.date || Date.now()).toLocaleString();
-            li.textContent = `${date}: ${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${formatUSD(tx.amount)} — Status: ${tx.status}`;
-            transactionList.prepend(li);
-        });
-    }
-
+    
     // *** POPUP NOTIFICATION SETUP ***
     const popupContainer = document.createElement('div');
     popupContainer.id = 'popupContainer';
@@ -228,104 +494,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 4000);
     }
     
-    // --- PERSISTENT NOTIFICATION TRACKING ---
-    let notifiedTransactionIds = new Set();
-    const NOTIFIED_KEY = `notifiedTransactions_${user.id}`; 
-    const storedNotified = localStorage.getItem(NOTIFIED_KEY); 
-
-    if (storedNotified) {
-        try {
-            const storedArray = JSON.parse(storedNotified);
-            if (Array.isArray(storedArray)) {
-                notifiedTransactionIds = new Set(storedArray);
-            }
-        } catch (e) {
-            console.error("Failed to parse notified transactions from localStorage:", e);
-            notifiedTransactionIds = new Set();
-        }
-    }
-
-
     // ====================================================================
-    // --- API CALL FUNCTIONS ---
+    // --- UI EVENT LISTENERS (Modals) ---
     // ====================================================================
-
-    // PRIMARY DATA FETCH FUNCTION - SYNCS ALL METRICS
-    async function fetchUserData() {
-        try {
-            const res = await fetch(`${API_USERS}/${user.id}`);
-            if (!res.ok) throw new Error('Failed to load user data');
-            const userData = await res.json();
-            
-            // 🛑 NEW: BAN CHECK 🛑
-            if (userData.isBanned === true) {
-                alert('🚫 Account Banned: Access has been permanently revoked by the administrator.');
-                // Clear session and redirect to login
-                sessionStorage.clear();
-                window.location.href = '../login/login.html'; 
-                return; // STOP execution
-            }
-
-            // NOTE: Update the local 'user' object and session storage with the latest status
-            // This is critical for the transaction listeners to check 'isFrozen'
-            user = { ...user, ...userData }; // Merge old user data with new fetched data
-            sessionStorage.setItem('user', JSON.stringify(user)); // Update session storage
-
-            // Update all state variables with fetched data (CRITICAL SYNCHRONIZATION POINT)
-            balance = userData.balance || 0;
-            roi = userData.roi || 0;
-            activeInvestments = userData.activeTrades || 0; 
-            activeDepositsCount = userData.deposits || 0; 
-            
-            // Synchronize the UI elements
-            updateDashboard();
-        } catch (err) {
-            console.error('Error loading user data:', err);
-        }
-    }
-
-    async function fetchTransactionsWithPopup() {
-        if (!transactionList) return; 
-
-        try {
-            const res = await fetch(`${API_TRANSACTIONS}?userId=${user.id}&_sort=id&_order=desc`);
-            if (!res.ok) throw new Error('Failed to load transactions');
-            const transactions = await res.json();
-
-            transactions.forEach(tx => {
-                if (
-                    (tx.status === 'approved' || tx.status === 'declined') &&
-                    !notifiedTransactionIds.has(tx.id)
-                ) {
-                    const action = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
-                    const isSuccess = tx.status === 'approved';
-                    const statusMsg = isSuccess ? 'approved ✅' : 'declined ❌';
-                    showPopup(`${action} of ${formatUSD(tx.amount)} was ${statusMsg}`, isSuccess);
-
-                    notifiedTransactionIds.add(tx.id);
-                }
-            });
-
-            localStorage.setItem(
-                NOTIFIED_KEY,
-                JSON.stringify([...notifiedTransactionIds])
-            );
-
-            renderTransactions(transactions);
-        } catch (err) {
-            console.error('Error loading transactions:', err);
-        }
-    }
-
-
-    // ====================================================================
-    // --- MODAL EVENT LISTENERS (For Deposit/Withdrawal Synchronization) ---
-    // ====================================================================
-
+    
     if (openAddBtn && addModal) {
         openAddBtn.addEventListener('click', () => {
             openModal(addModal);
-            // Ensure the deposit display updates when the modal is first opened
             updateDepositDisplay(); 
         });
     }
@@ -351,153 +526,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- Add funds (API) ---
-    if (confirmAddBtn && addAmountInput && statusAdd) {
-        confirmAddBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            // 🥶 NEW: TRANSACTION FREEZE CHECK 🥶
-            if (user.isFrozen === true) {
-                statusAdd.textContent = '❌ Transactions are currently frozen by the administrator.';
-                statusAdd.style.color = 'red';
-                return; // STOP execution
-            }
-
-            const amount = parseFloat(addAmountInput.value);
-            if (isNaN(amount) || amount <= 0) {
-                statusAdd.textContent = " ! Please enter a valid amount.";
-                statusAdd.style.color = 'red';
-                return;
-            }
-            
-            // Capture selected Coin and Network
-            const coinType = coinTypeSelect.value;
-            const networkType = networkTypeSelect.value;
-            
-            // Basic validation for the selections
-            if (!coinType || !networkType) {
-                 statusAdd.textContent = " ! Please select a Coin Type and Network.";
-                 statusAdd.style.color = 'red';
-                 return;
-            }
-
-            statusAdd.textContent = " ⏳ Awaiting admin approval...";
-            statusAdd.style.color = 'black';
-
-            const newTransaction = {
-                userId: user.id,
-                type: 'deposit',
-                amount: amount,
-                coin: coinType,       
-                network: networkType, 
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-
-            try {
-                const res = await fetch(API_TRANSACTIONS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newTransaction)
-                });
-
-                if (!res.ok) throw new Error('Failed to submit deposit request.');
-
-                statusAdd.textContent = " ✅ Deposit request submitted!";
-                statusAdd.style.color = 'green';
-                addAmountInput.value = '';
-
-                setTimeout(() => {
-                    closeModal(addModal);
-                }, 1500);
-
-                // SYNCHRONIZATION CALLS AFTER SUCCESSFUL ACTION
-                await fetchUserData(); 
-                await fetchTransactionsWithPopup(); 
-
-            } catch (err) {
-                statusAdd.textContent = '❌ ' + err.message;
-                statusAdd.style.color = 'red';
-            }
-        });
-    }
-
-    // --- Withdraw funds (API) ---
-    if (confirmWithdrawBtn && withdrawAmountInput && statusWithdraw) {
-        confirmWithdrawBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            // 🥶 NEW: TRANSACTION FREEZE CHECK 🥶
-            if (user.isFrozen === true) {
-                statusWithdraw.textContent = '❌ Transactions are currently frozen by the administrator.';
-                statusWithdraw.style.color = 'red';
-                return; // STOP execution
-            }
-
-            const amount = parseFloat(withdrawAmountInput.value);
-            const walletAddress = withdrawModal.querySelector('input[type="text"]').value.trim();
-
-            if (!walletAddress) {
-                statusWithdraw.textContent = ' ! Please enter your wallet address';
-                statusWithdraw.style.color = 'red';
-                return;
-            }
-            if (isNaN(amount) || amount <= 0) {
-                statusWithdraw.textContent = " ! Enter a valid amount.";
-                statusWithdraw.style.color = 'red';
-                return;
-            }
-            if (amount > balance) {
-                statusWithdraw.textContent = " ! Insufficient balance.";
-                statusWithdraw.style.color = 'red';
-                return;
-            }
-
-            statusWithdraw.textContent = " ⏳ Awaiting admin approval...";
-            statusWithdraw.style.color = 'black';
-
-            const newTransaction = {
-                userId: user.id,
-                type: 'withdrawal',
-                amount: amount,
-                walletAddress: walletAddress, // Included address for withdrawal
-                status: 'pending',
-                createdAt: new Date().toISOString()
-            };
-
-            try {
-                const res = await fetch(API_TRANSACTIONS, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newTransaction)
-                });
-
-                if (!res.ok) throw new Error('Failed to submit withdrawal request.');
-
-                statusWithdraw.textContent = " ✅ Withdrawal request submitted!";
-                statusWithdraw.style.color = 'green';
-                withdrawAmountInput.value = '';
-
-                setTimeout(() => {
-                    closeModal(withdrawModal);
-                }, 1500);
-
-                // SYNCHRONIZATION CALLS AFTER SUCCESSFUL ACTION
-                await fetchUserData(); 
-                await fetchTransactionsWithPopup(); 
-
-            } catch (err) {
-                statusWithdraw.textContent = '❌ ' + err.message;
-                statusWithdraw.style.color = 'red';
-            }
-        });
-    }
-
-
     // ====================================================================
     // --- GLOBAL UI COMPONENTS (Theme, Sidebar, Dropdown) ---
     // ====================================================================
-
+    
     // --- Theme toggle (Persistence) ---
     if (themeToggleBtn && themeIcon) {
         const savedTheme = localStorage.getItem('theme');
@@ -508,7 +540,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.classList.remove('dark-mode');
             themeIcon.classList.replace("fa-sun", "fa-moon");
         }
-
 
         themeToggleBtn.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
@@ -523,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Sidebar toggle ---
+    // --- Sidebar toggle (Logic omitted for brevity, assuming existing code works) ---
     if (sidebar && sidebarToggleBtn && mainContent && mobileOverlay && hamburgerIcon) {
         const mediaQuery = window.matchMedia("(max-width: 768px)");
 
@@ -580,14 +611,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Logout button logic ---
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            sessionStorage.clear();
-            window.location.href = "../login/login.html";
-        });
-    }
+    // --- Logout button logic (Replaced with global function call from HTML) ---
+    // The previous code is removed as it's now handled by the inline HTML script:
+    // <li><a href="javascript:void(0);" onclick="handleLogout();">...</a></li>
 
 
     // ====================================================================
@@ -604,14 +630,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (window.TradingView && window.TradingView.widget) {
                  // Already loaded
             } else {
+                // Remove existing scripts if you need to dynamically re-add/update the widget
+                tradingViewContainer.innerHTML = ''; 
+                
                 let script = document.createElement('script');
                 script.src = 'https://s3.tradingview.com/tv.js'; 
                 script.onload = function () {
-                    new TradingView.widget({
+                    new window.TradingView.widget({ // Use window.TradingView for safety
                         container_id: "tradingview_eurusd",
                         autosize: true,
                         symbol: "FX:EURUSD",
-                        width: "900px",
+                        width: "100%", // Use 100% width for better responsiveness
                         height: 400,
                         theme: theme 
                     });
@@ -630,11 +659,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- INITIALIZATION AND POLLING (Passive Sync) ---
     // ====================================================================
 
-    // Initial load fetches all current data
+    // 1. Fetch the admin-set wallet configuration
+    fetchWalletConfig(); 
+    
+    // 2. Initial load fetches all user data and transactions
     fetchUserData();
     fetchTransactionsWithPopup(); 
 
-    // Polling for passive synchronization every 60 seconds
+    // Polling for passive synchronization every 60 seconds (Using Firestore read, not API)
     if (balanceAmountEl || transactionList) {
         setInterval(() => {
             fetchUserData();
