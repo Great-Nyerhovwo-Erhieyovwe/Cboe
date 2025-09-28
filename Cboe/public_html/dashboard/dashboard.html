@@ -2,234 +2,270 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cboe | Dashboard</title>
-  <!-- custom CSS -->
-  <link rel="stylesheet" href="../assets/css/dashboard.css" />
-  <!-- font awesome CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
-    integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cboe | Dashboard</title>
+    <link rel="stylesheet" href="../assets/css/dashboard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
+        integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+        
+    <script type="module">
+        // Import the necessary Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        // NOTE: Keeping getAnalytics is optional
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+            authDomain: "cboefirebaseserver.firebaseapp.com",
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
+            projectId: "cboefirebaseserver",
+            storageBucket: "cboefirebaseserver.firebasestorage.app",
+            messagingSenderId: "755491003217",
+            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+            measurementId: "G-FCZEERNC06"
+        };
+
+        // Initialize Firebase and Services
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        // const analytics = getAnalytics(app); // Optional
+
+        // Make core services accessible to other script modules
+        window.firebaseApp = app;
+        window.db = db;
+        window.auth = auth;
+
+        // 🛑 AUTHENTICATION REDIRECT CHECK (Crucial for user-facing pages) 🛑
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // User is not signed in, redirect to login page
+                console.log("No user signed in. Redirecting to login.");
+                // NOTE: Assuming your login page is at '../login/login.html'
+                window.location.replace("../login/login.html"); 
+            } else {
+                // User is signed in, allow access
+                console.log(`User ${user.uid} is signed in.`);
+                // You can add a loading screen here and hide it now
+            }
+        });
+
+        // 🛑 LOGOUT HANDLER 🛑
+        window.handleLogout = async () => {
+            try {
+                await signOut(auth);
+                // The onAuthStateChanged listener above handles the redirection after sign out
+            } catch (error) {
+                console.error("Logout failed:", error);
+                alert("Logout failed. Please try again.");
+            }
+        };
+    </script>
+    </head>
 
 <body class="light-mode">
-  <div id="dashboard-container">
-    <!-- sidebar -->
-    <aside id="sidebar">
-      <div class="sidebar-header">
-        <h2>Cboe</h2>
-      </div>
-      <nav>
-        <ul>
-          <li><a href="#" class="active"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
-          <li><a href="market.html"><i class="fa-solid fa-chart-line"></i><span>Market & Pairs</span></a></li>
-          <li><a href="trade.html"><i class="fa-solid fa-money-bill-trend-up"></i><span>Trade</span></a></li>
-          <li><a href="deposit.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Deposit</span></a></li>
-          <li><a href="#"><i class="fas arrow-up"></i><span>Withdraw</span></a></li>
+    <div id="dashboard-container">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h2>Cboe</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                    <li><a href="market.html"><i class="fa-solid fa-chart-line"></i><span>Market & Pairs</span></a></li>
+                    <li><a href="trade.html"><i class="fa-solid fa-money-bill-trend-up"></i><span>Trade</span></a></li>
+                    <li><a href="deposit.html"><i class="fa-solid fa-money-bill-transfer"></i><span>Deposit</span></a></li>
+                    <li><a href="#"><i class="fas arrow-up"></i><span>Withdraw</span></a></li>
 
-          <!-- <h3>General</h3> -->
-          <li><a href="settings.html"><i class="fa-solid fa-user-gear"></i><span>Settings</span></a></li>
-          <li><a href="support.html"><i class="fa-solid fa-ticket"></i><span>Support</span></a></li>
-          <li><a href="#"><i class="fa-solid fa-arrow-left" id="logoutBtn"></i><span>Logout</span></a></li>
-        </ul>
-      </nav>
-      <!-- theme toggle and register button -->
-      <div class="sidebar-footer">
-        <button id="theme-toggle" class="sidebar-btn">
-          <i class="fas fa-moon"></i><span>Toggle Theme</span>
-        </button>
-        <button id="profile-btn" class="sidebar-btn profile-sidebar-btn">
-          <i class="fa-solid fa-user"></i><span>Profile</span>
-        </button>
-      </div>
-    </aside>
+                    <li><a href="settings.html"><i class="fa-solid fa-user-gear"></i><span>Settings</span></a></li>
+                    <li><a href="support.html"><i class="fa-solid fa-ticket"></i><span>Support</span></a></li>
+                    <li><a href="javascript:void(0);" onclick="handleLogout();"><i class="fa-solid fa-arrow-left"></i><span>Logout</span></a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="sidebar-btn">
+                    <i class="fas fa-moon"></i><span>Toggle Theme</span>
+                </button>
+                <button id="profile-btn" class="sidebar-btn profile-sidebar-btn">
+                    <i class="fa-solid fa-user"></i><span>Profile</span>
+                </button>
+            </div>
+        </aside>
 
-    <!-- main content area -->
-    <div id="main-content">
-      <!-- top nav bar -->
-      <header id="navbar">
-        <div class="navbar-left">
-          <button id="sidebar-toggle" class="hamburger-btn">
-            <i class="fas fa-bars"></i>
-          </button>
-          <span class="company-name">Cboe</span>
+        <div id="main-content">
+            <header id="navbar">
+                <div class="navbar-left">
+                    <button id="sidebar-toggle" class="hamburger-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="company-name">Cboe</span>
+                </div>
+
+                <div class="navbar-left">
+                    <div id="profile-dropdown" class="profile-container">
+                        <div class="profile-info">
+                            <span id="profileName"></span>
+                            <img src="" alt="" class="profile-avatar" />
+                        </div>
+                        <div class="dropdown-menu hidden">
+                            <a href="settings.html">Settings</a>
+                            <a href="javascript:void(0);" onclick="handleLogout();">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content">
+                <div class="dashboard-top">
+                    <h3 id="page-title">Dashboard</h3>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 30px;">
+                        <button class="funds-btn add" id="openAddFunds">Deposit</button>
+                        <button class="funds-btn withdraw" id="openWithdrawFunds">Withdraw</button>
+                    </div>
+                </div>
+
+                <section class="dashboard-overview">
+                    <div class="card mini-card">
+                        <div class="card-icon"><i class="fas fa-wallet"></i></div>
+                        <div class="card-info" id="totalValueCard">
+                            <span class="card-title">Balance Overview</span>
+                            <p><span class="card-value positive" id="balanceAmount">$0.00</span></p>
+                        </div>
+                    </div>
+
+                    <div class="card mini-card">
+                        <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">ROI</span>
+                            <p><span class="card-value positive" id="roi">+ $0.00 (0.0%)</span></p>
+                        </div>
+                    </div>
+
+
+                    <div class="card mini-card">
+                        <div class="card-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="card-info" id="investmentModal">
+                            <span class="card-title">Active Investment/Trades</span>
+                            <p><span class="card-value" id="initialInvestment">$0.00</span></p>
+                        </div>
+                    </div>
+
+                    <div class="card mini-card">
+                        <div class="card-icon"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="card-info" id="openAddModal">
+                            <span class="card-title">Active Deposits</span>
+                            <p><span class="card-value" id="activeDeposit">No active deposits.</span></p>
+                        </div>
+                    </div>
+
+
+                    <div class="card flexible1">
+                        <div class="card-icon"><i class="fas fa-history"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Transaction History</span>
+                            <ul id="transactionList" style="list-style: none;">
+                                <li></li>
+                                <li></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card flexible2">
+                        <canvas id="analyticsChart" height="400"></canvas>
+                    </div>
+
+                    <div class="card empty-card">
+                        </div>
+
+                    <div class="card flexible3">
+                        <div class="card-info">
+                            <span class="card-title">Market Chart (EUR/USD) </span>
+                            <div id="tradingview_eurusd" class="tradingview-eurusd"></div>
+                        </div>
+                    </div>
+
+                </section>
+                </main>
         </div>
+    </div>
 
-        <div class="navbar-left">
-          <div id="profile-dropdown" class="profile-container">
-            <div class="profile-info">
-              <span id="profileName"></span>
-              <img src="" alt="" class="profile-avatar" />
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2>Add Funds</h2>
+
+            <label for="coinType">Coin Type</label>
+            <select id="coinType">
+                <option value="USDT">USDT (Tether)</option>
+                <option value="BTC" selected>BTC (Bitcoin)</option>
+                <option value="ETH">ETH (Ethereum)</option>
+            </select>
+
+            <label for="networkType">Chain / Network Type</label>
+            <select id="networkType">
+                <option value="TRC-20">TRC-20 (Tron)</option>
+                <option value="ERC-20">ERC-20 (Ethereum)</option>
+                <option value="BEP-20">BEP-20 (BSC)</option>
+            </select>
+
+            <label>Deposit Wallet Address</label>
+            <p id="walletAddressDisplay" style="font-weight: bold; padding: 5px; border: 1px dashed #555; background-color: #333; word-break: break-all;">
+                1P5N....hJvA
+            </p>
+
+            <div id="qrCodeContainer" style="text-align: center; margin: 15px 0;">
+                <img
+                    id="qrCodeImage"
+                    src="../assets/IMG_3817.png"
+                    alt="Deposit QR Code"
+                    style="width: 150px; height: 150px; border: 1px solid #444; border-radius: 8px; padding: 5px;"
+                >
+                <p style="font-size: 0.8em; color: #888;">Scan to deposit.</p>
             </div>
-            <div class="dropdown-menu hidden">
-              <a href="#">Settings</a>
-              <a href="../login/login.html" id="logoutBtn">Logout</a>
-            </div>
-          </div>
+
+            <label>Amount (USD)</label>
+            <input type="number" id="addAmount" placeholder="Enter amount">
+
+            <button class="confirm-btn confirmAdd" id="confirmAdd">Confirm</button>
+            <p class="status-msg" id="statusAdd"></p>
+
+            <span class="close-btn" data-modal="addModal">&times;</span>
         </div>
-      </header>
+    </div>
 
-      <main id="content">
-        <div class="dashboard-top">
-          <h3 id="page-title">Dashboard</h3>
+    <div class="modal-overlay" id="withdrawModal">
+        <div class="modal">
+            <h2>Withdraw Funds</h2>
+            <label>Wallet Address</label>
+            <input type="text" value="" placeholder="Enter your wallet address" required>
 
-          <div style="display: flex; gap: 10px; margin-bottom: 30px;">
-            <button class="funds-btn add" id="openAddFunds">Deposit</button>
-            <button class="funds-btn withdraw" id="openWithdrawFunds">Withdraw</button>
-          </div>
+            <label>Network</label>
+            <select>
+                <option>USDT</option>
+                <option>BTC</option>
+                <option>ETH</option>
+            </select>
+
+            <label>Amount (USD)</label>
+            <input type="number" id="withdrawAmount" placeholder="Enter amount">
+
+            <button class="confirm-btn" id="confirmWithdraw">Confirm</button>
+            <p class="status-msg" id="statusWithdraw"></p>
+
+            <span class="close-btn" data-modal="withdrawModal">&times;</span>
         </div>
-
-        <section class="dashboard-overview">
-          <div class="card mini-card">
-            <div class="card-icon"><i class="fas fa-wallet"></i></div>
-            <div class="card-info" id="totalValueCard">
-              <span class="card-title">Balance Overview</span>
-              <p><span class="card-value positive" id="balanceAmount">$0.00</span></p>
-            </div>
-          </div>
-
-          <div class="card mini-card">
-            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-            <div class="card-info">
-              <span class="card-title">ROI</span>
-              <p><span class="card-value positive" id="roi">+ $0.00 (0.0%)</span></p>
-            </div>
-          </div>
-
-
-          <div class="card mini-card">
-            <div class="card-icon"><i class="fas fa-briefcase"></i></div>
-            <div class="card-info" id="investmentModal">
-              <span class="card-title">Active Investment/Trades</span>
-              <p><span class="card-value" id="initialInvestment">$0.00</span></p>
-            </div>
-          </div>
-
-          <div class="card mini-card">
-            <div class="card-icon"><i class="fas fa-piggy-bank"></i></div>
-            <div class="card-info" id="openAddModal">
-              <span class="card-title">Active Deposits</span>
-              <p><span class="card-value" id="activeDeposit">No active deposits.</span></p>
-            </div>
-          </div>
-
-
-          <div class="card flexible1">
-            <div class="card-icon"><i class="fas fa-history"></i></div>
-            <div class="card-info">
-              <span class="card-title">Transaction History</span>
-              <ul id="transactionList" style="list-style: none;">
-                <li></li>
-                <li></li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="card flexible2">
-            <!-- <h3 style="text-align: center;">Analytics Chart</h3> -->
-            <canvas id="analyticsChart" height="400"></canvas>
-          </div>
-
-          <div class="card empty-card">
-            <!-- <button id="deposit-btn" class="deposit-btn">Deposit</button>
-            <button id="withdraw-btn" class="withdraw-btn">Withdraw</button> -->
-          </div>
-
-          <div class="card flexible3">
-            <!-- <div class="card-icon"><i class="fas fa-users"></i></div> -->
-            <div class="card-info">
-              <span class="card-title">Market Chart (EUR/USD) </span>
-              <div id="tradingview_eurusd" class="tradingview-eurusd"></div>
-            </div>
-          </div>
-
-        </section>
-<!-- 
-        <section>
-          <h2>Your Messages & Billings</h2>
-          <div id="user-messages">Loading messages...</div>
-        </section> -->
-
-      </main>
     </div>
-  </div>
-
-  <!-- add funds modal -->
-  <div class="modal-overlay" id="addModal">
-  <div class="modal">
-    <h2>Add Funds</h2>
-
-    <label for="coinType">Coin Type</label>
-    <select id="coinType">
-      <option value="USDT">USDT (Tether)</option>
-      <option value="BTC" selected>BTC (Bitcoin)</option>
-      <option value="ETH">ETH (Ethereum)</option>
-    </select>
-
-    <label for="networkType">Chain / Network Type</label>
-    <select id="networkType">
-      <option value="TRC-20">TRC-20 (Tron)</option>
-      <option value="ERC-20">ERC-20 (Ethereum)</option>
-      <option value="BEP-20">BEP-20 (BSC)</option>
-    </select>
-    
-    <label>Deposit Wallet Address</label>
-    <p id="walletAddressDisplay" style="font-weight: bold; padding: 5px; border: 1px dashed #555; background-color: #333; word-break: break-all;">
-      1P5N....hJvA
-    </p>
-
-    <div id="qrCodeContainer" style="text-align: center; margin: 15px 0;">
-      <img 
-        id="qrCodeImage"
-        src="../assets/IMG_3817.png" 
-        alt="Deposit QR Code" 
-        style="width: 150px; height: 150px; border: 1px solid #444; border-radius: 8px; padding: 5px;"
-      >
-      <p style="font-size: 0.8em; color: #888;">Scan to deposit.</p>
-    </div>
-    
-    <label>Amount (USD)</label>
-    <input type="number" id="addAmount" placeholder="Enter amount">
-
-    <button class="confirm-btn confirmAdd" id="confirmAdd">Confirm</button>
-    <p class="status-msg" id="statusAdd"></p>
-
-    <span class="close-btn" data-modal="addModal">&times;</span>
-  </div>
-</div>
-
-  <!-- withdraw modal -->
-  <div class="modal-overlay" id="withdrawModal">
-    <div class="modal">
-      <h2>Withdraw Funds</h2>
-      <label>Wallet Address</label>
-      <input type="text" value="" placeholder="Enter your wallet address" required>
-
-      <label>Network</label>
-      <select>
-        <option>USDT</option>
-        <option>BTC</option>
-        <option>ETH</option>
-      </select>
-
-      <label>Amount (USD)</label>
-      <input type="number" id="withdrawAmount" placeholder="Enter amount">
-
-      <button class="confirm-btn" id="confirmWithdraw">Confirm</button>
-      <p class="status-msg" id="statusWithdraw"></p>
-
-      <span class="close-btn" data-modal="withdrawModal">&times;</span>
-    </div>
-  </div>
 
 
-  <!-- mobile overlay -->
-  <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+    <div id="mobile-overlay" class="mobile-overlay hidden"></div>
 
-  <!-- chart js cdn-->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="../assets/js/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="../assets/js/dashboard.js"></script>
 </body>
 
 </html>
