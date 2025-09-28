@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 //    Redirect to the dashboard (index.html), which will perform the 
                 //    SECURE Admin Role Check using Firestore Security Rules.
                 console.log("Login successful. Checking admin status on dashboard page...");
-                window.location.href = '../dashboard/dashboard.html'; 
+                window.location.href = '../dashboard.html'; 
 
             } catch (error) {
                 console.error("Firebase Login Error:", error);
