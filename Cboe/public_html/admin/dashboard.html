@@ -6,15 +6,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin | Dashboard</title>
     <link rel="stylesheet" href="./assets/css/dashboard.css">
-    <!-- font awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
         integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script type="module">
+        // Import the necessary Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+        
+        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+            authDomain: "cboefirebaseserver.firebaseapp.com",
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
+            projectId: "cboefirebaseserver",
+            storageBucket: "cboefirebaseserver.firebasestorage.app",
+            messagingSenderId: "755491003217",
+            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+            measurementId: "G-FCZEERNC06"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        
+        // Initialize services and make them globally accessible
+        window.auth = getAuth(app);
+        window.db = getFirestore(app);
+
+        // 🛑 Admin-specific Auth Check and Redirection 🛑
+        onAuthStateChanged(window.auth, async (user) => {
+            if (user) {
+                window.currentUser = user; // Make user object globally available
+                
+                // Check if user is an Admin in Firestore
+                const userDocRef = doc(window.db, "users", user.uid);
+                const docSnap = await getDoc(userDocRef);
+
+                if (docSnap.exists() && docSnap.data().isAdmin === true) {
+                    console.log("Admin user authenticated and profile loaded.");
+                    // The rest of the dashboard setup will run in dashboard.js
+                    document.body.classList.remove('loading');
+                } else {
+                    console.warn("User is not an admin. Redirecting.");
+                    window.location.href = "../login/login.html"; // Redirect unauthorized users
+                }
+            } else {
+                window.currentUser = null;
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = "../login/login.html";
+            }
+        });
+    </script>
+    <style>
+        .loading #dashboard-container { display: none; }
+        .light-mode { background-color: #f4f7f6; }
+    </style>
 </head>
 
-<body class="light-mode">
-    <div id="dashboard-container">
-        <!-- sidebar -->
+<body class="light-mode loading"> <div id="dashboard-container">
         <aside id="sidebar">
             <div class="sidebar-header">
                 <h2>Cboe</h2>
@@ -26,20 +77,16 @@
                     <li><a href="transaction.html"><i class="fa-solid fa-trend-up"></i><span>Transactions</span></a></li>
                 </ul>
             </nav>
-            <!-- theme toggle and register button -->
             <div class="sidebar-footer">
                 <button id="theme-toggle" class="sidebar-btn">
                     <i class="fas fa-moon"></i><span>Toggle Theme</span>
                 </button>
-                <button id="profile-btn" class="sidebar-btn profile-sidebar-btn">
-                    <i class="fa-solid fa-user"></i><span>Profile</span>
+                <button id="logout-btn" class="sidebar-btn profile-sidebar-btn"> <i class="fa-solid fa-sign-out-alt"></i><span>Logout</span>
                 </button>
             </div>
         </aside>
 
-        <!-- main content -->
         <div id="main-content">
-            <!-- top nav bar -->
             <header id="navbar" class="navbar">
                 <div class="navbar-left">
                     <button id="sidebar-toggle" class="hamburger-btn">
@@ -48,78 +95,77 @@
                     <span class="company-name">Cboe Admin</span>
                 </div>
 
-                <div class="navbar-left">
-
-                    <div id="nav-notification">
+                <div class="navbar-right"> <div id="nav-notification">
                         <i class="fa-solid fa-bell"></i>
                     </div>
 
                     <div id="profile-dropdown" class="profile-container">
                         <div class="profile-info">
-                            <!-- <span class="user-name">EmmaLex Vwede</span> -->
-                            <span class="user-name">Welcome, User</span>
+                            <span class="user-name" id="admin-user-name">Welcome, Admin</span> 
                             <img src="https://via.placeholder.com/40" alt="avatar" class="profile-avatar">
                         </div>
                         <div class="dropdown-menu hidden">
-                            <a href="#">Settings</a>
-                            <a href="#">Logout</a>
+                            <a href="#" id="dropdown-settings">Settings</a>
+                            <a href="#" id="dropdown-logout">Logout</a> 
                         </div>
                     </div>
                 </div>
             </header>
 
-            <!-- dashboard content -->
             <main id="content">
                 <h3 id="page-title">Admin Dashboard</h3>
 
                 <section class="dashboard-overview">
-  <div class="card">
-  <div class="card-icon"><i class="fas fa-tasks"></i></div>
-  <div class="card-info">
-    <span class="card-title">Active Users</span>
-    <p><span class="card-value" id="active-users">0</span></p>
-  </div>
-</div>
+                    <div class="card">
+                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Active Users</span>
+                            <p><span class="card-value" id="active-users">0</span></p>
+                        </div>
+                    </div>
 
-<div class="card">
-  <div class="card-icon"><i class="fas fa-sticky-note"></i></div>
-  <div class="card-info">
-    <span class="card-title">Verified Users</span>
-    <p><span class="card-value positive" id="verified-users">0</span></p>
-  </div>
-</div>
+                    <div class="card">
+                        <div class="card-icon"><i class="fas fa-sticky-note"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Verified Users</span>
+                            <p><span class="card-value positive" id="verified-users">0</span></p>
+                        </div>
+                    </div>
 
-<div class="card">
-  <div class="card-icon"><i class="fas fa-users"></i></div>
-  <div class="card-info">
-    <span class="card-title">Total Users</span>
-    <span class="card-value" id="total-users">0</span>
-  </div>
-</div>
+                    <div class="card">
+                        <div class="card-icon"><i class="fas fa-users"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Total Users</span>
+                            <span class="card-value" id="total-users">0</span>
+                        </div>
+                    </div>
 
-<div class="card">
-  <div class="card-icon"><i class="fas fa-tools"></i></div>
-  <div class="card-info">
-    <span class="card-title">Active/Total Trades</span>
-    <span class="card-value" id="active-trades">0</span>
-  </div>
-</div>
-
-  <div class="card flexible1">
-    <div class="card-icon"><i class="fas fa-users"></i></div>
-    <div class="card-info">
-      <span class="card-title">Transaction History</span>
-      <li><span class="card-value" id="recent-tx">Loading...</span></li>
-    </div>
-  </div>
-</section>
+                    <div class="card">
+                        <div class="card-icon"><i class="fas fa-tools"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Total Transactions</span>
+                            <span class="card-value" id="total-transactions">0</span> 
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="recent-data-section">
+                     <div class="card flexible-card">
+                        <div class="card-icon"><i class="fas fa-list"></i></div>
+                        <div class="card-info">
+                            <span class="card-title">Recent Transactions</span>
+                            <ul id="recent-transactions-list" class="recent-list">
+                                <li class="recent-list-item"><span class="card-value" id="recent-tx">Loading...</span></li>
+                            </ul>
+                        </div>
+                    </div>
                 </section>
             </main>
         </div>
     </div>
 
     <div id="mobile-overlay" class="mobile-overlay hidden"></div>
-    <script src="./assets/js/dashboard.js"></script>
+    <script type="module" src="./assets/js/dashboard.js"></script> 
 </body>
 
 </html>
