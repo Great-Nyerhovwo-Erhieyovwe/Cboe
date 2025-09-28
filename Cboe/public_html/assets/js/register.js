@@ -1,6 +1,28 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const API_USERS = 'https://cboejsonserver.onrender.com/api/users';
+// 🛑 FIREBASE IMPORTS 🛑
+import { 
+    createUserWithEmailAndPassword, 
+    updateProfile 
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { 
+    doc, 
+    setDoc, 
+    collection, 
+    query, 
+    where, 
+    getDocs 
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
+
+// ❌ REMOVED: JSON Server URL is obsolete
+// const API_USERS = 'https://cboejsonserver.onrender.com/api/users'; 
+
+// 🛑 FIREBASE SERVICES (Accessed globally from the HTML script) 🛑
+const auth = window.auth;
+const db = window.db; 
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- DOM Elements ---
     const form = document.getElementById('registrationForm');
     const fullNameInput = document.getElementById('fullName');
     const usernameInput = document.getElementById('username');
@@ -9,17 +31,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
     const termsCheckbox = document.getElementById('terms');
-    const modal = document.getElementById('modal');
-    const closeBtn = document.querySelector('.close');
-    const modalMessage = document.getElementById('modal-message');
+    const agreeCheckbox = document.getElementById('agree'); // NEW: Added age/service agreement
+    const accountTypeInput = document.getElementById('accountType'); // NEW
+    const countryInput = document.getElementById('country'); // NEW
+    const currencyInput = document.getElementById('currency'); // NEW
 
+    // Modal elements (Unified for consistency)
+    const modal = document.getElementById('modal');
+    const closeModalBtn = document.getElementById('closeModal'); // Used ID from updated HTML
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalSpinner = document.getElementById('modalSpinner');
+
+    // Error elements
     const fullNameError = document.getElementById('fullNameError');
     const usernameError = document.getElementById('usernameError');
     const emailError = document.getElementById('emailError');
     const passwordError = document.getElementById('passwordError');
     const confirmPasswordError = document.getElementById('confirmPasswordError');
     const termsError = document.getElementById('termsError');
+    const ageAgreementError = document.getElementById('ageAgreementError'); // NEW: For the 'agree' checkbox
 
+    // Feedback elements
     const usernameFeedback = document.getElementById('usernameFeedback');
     const usernameSuggestions = document.getElementById('usernameSuggestions');
     const phoneFeedback = document.getElementById('phoneFeedback');
@@ -27,21 +61,88 @@ document.addEventListener('DOMContentLoaded', () => {
     const strengthText = document.getElementById('strengthText');
     const psi = document.querySelector('.password-strength-indicator');
 
+    // Toggle icons (Used IDs from updated HTML)
+    const togglePwd = document.getElementById('togglePwd');
+    const toggleConfirmPwd = document.getElementById('toggleConfirmPwd');
 
+    // 💬 NEW: Function to display the unified modal
+    const showModal = (title, message, isError = true, showSpinner = false) => {
+        if (modalTitle) modalTitle.textContent = title;
+        if (modalMessage) modalMessage.textContent = message;
+        
+        if (modalIcon) {
+            if (showSpinner) {
+                modalIcon.className = 'hidden';
+            } else {
+                modalIcon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+                modalIcon.style.color = isError ? 'red' : 'green';
+                modalIcon.classList.remove('hidden');
+            }
+        }
+        if (modalSpinner) modalSpinner.style.display = showSpinner ? 'block' : 'none';
+        if (modal) modal.style.display = "block";
+    };
+
+    // ❌ Close modal handlers (Unified)
+    if (closeModalBtn) {
+        closeModalBtn.onclick = function () {
+            if (modal) modal.style.display = "none";
+        };
+    }
+
+    window.onclick = function (event) {
+        if (event.target === modal) {
+            if (modal) modal.style.display = "none";
+        }
+    };
+    
+    // 👁️ Toggle password visibility for both fields
+    const setupPasswordToggle = (toggleElement, inputElement) => {
+        if (toggleElement && inputElement) {
+            toggleElement.addEventListener('click', () => {
+                const isPassword = inputElement.type === 'password';
+                inputElement.type = isPassword ? 'text' : 'password';
+                toggleElement.classList.toggle('fa-eye-slash', isPassword);
+                toggleElement.classList.toggle('fa-eye', !isPassword);
+                toggleElement.style.color = isPassword ? '#666' : '#0066cc';
+            });
+        }
+    };
+
+    setupPasswordToggle(togglePwd, passwordInput);
+    setupPasswordToggle(toggleConfirmPwd, confirmPasswordInput);
+    
     // utility function to display error messages
     const displayError = (element, message) => {
         element.textContent = message;
         element.style.display = 'block';
-        element.previousElementSibling.classList.add('invalid'); // Add invalid class to input
-        element.previousElementSibling.classList.remove('valid'); // remove valid class if present
+        if (element.previousElementSibling) {
+             // Handle the case where the previous sibling is the label, not the input
+            let inputElement = element.previousElementSibling;
+            if (inputElement.tagName === 'LABEL') {
+                inputElement = inputElement.nextElementSibling;
+            }
+            if (inputElement && inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT') {
+                inputElement.classList.add('invalid');
+                inputElement.classList.remove('valid');
+            }
+        }
     };
 
     // utility function to clear error messages
     const clearError = (element) => {
         element.textContent = '';
         element.style.display = 'none';
-        element.previousElementSibling.classList.remove('invalid'); // Remove invalid class from input
-        element.previousElementSibling.classList.add('valid'); // Add valid class to input
+         if (element.previousElementSibling) {
+            let inputElement = element.previousElementSibling;
+            if (inputElement.tagName === 'LABEL') {
+                inputElement = inputElement.nextElementSibling;
+            }
+            if (inputElement && inputElement.tagName === 'INPUT' || inputElement.tagName === 'SELECT') {
+                inputElement.classList.remove('invalid');
+                inputElement.classList.add('valid');
+            }
+        }
     };
 
     // --- Validation Functions ---
@@ -60,50 +161,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const takenUsernames = ['john', 'admin', 'testuser', 'guest123', 'username']; // pretend these are already taken
-
-    // Username validation and suggestion
-    usernameInput.addEventListener('input', () => {
-        const value = usernameInput.value.trim();
-        usernameSuggestions.innerHTML = '';
-        usernameSuggestions.style.display = 'none';
-
-        if (value.length < 6) {
-            usernameFeedback.textContent = 'Username must be at least 6 characters';
+    // 💬 MODIFIED: Username check now uses Firestore
+    // Username check is an ASYNCHRONOUS operation now
+    const checkUsernameAvailability = async (username) => {
+        if (username.length < 6) {
+            usernameFeedback.textContent = 'Username must be at least 6 characters.';
             usernameFeedback.classList.remove('valid');
-            return;
+            return false;
         }
 
-        const isTaken = takenUsernames.includes(value.toLowerCase());
-        if (isTaken) {
-            usernameFeedback.textContent = 'This username is taken';
-            usernameFeedback.classList.remove('valid');
+        const usernameQuery = query(collection(db, "users"), where("username", "==", username));
+        
+        try {
+            const querySnapshot = await getDocs(usernameQuery);
 
-            // show suggestions
-            const suggestions = [
-                value + Math.floor(Math.random() * 100),
-                value + '_01',
-                value + '_user',
-            ];
-            suggestions.forEach(s => {
-                const li = document.createElement('li');
-                li.textContent = s;
-                li.addEventListener('click', () => {
-                    usernameInput.value = s;
-                    usernameFeedback.textContent = 'Available';
-                    usernameFeedback.classList.add('valid');
-                    usernameSuggestions.style.display = 'none';
+            if (querySnapshot.empty) {
+                usernameFeedback.textContent = 'Username available.';
+                usernameFeedback.classList.add('valid');
+                usernameInput.classList.remove('invalid');
+                usernameInput.classList.add('valid');
+                usernameSuggestions.innerHTML = '';
+                usernameSuggestions.style.display = 'none';
+                return true;
+            } else {
+                usernameFeedback.textContent = 'This username is taken.';
+                usernameFeedback.classList.remove('valid');
+                usernameInput.classList.add('invalid');
+                usernameInput.classList.remove('valid');
+
+                // Generate suggestions (still client-side for immediate feedback)
+                usernameSuggestions.innerHTML = '';
+                const suggestions = [
+                    username + Math.floor(Math.random() * 100),
+                    username + '_01',
+                    username + '_user',
+                ];
+                suggestions.forEach(s => {
+                    const li = document.createElement('li');
+                    li.textContent = s;
+                    li.addEventListener('click', () => {
+                        usernameInput.value = s;
+                        usernameInput.dispatchEvent(new Event('input')); // Re-check availability on select
+                        usernameSuggestions.style.display = 'none';
+                    });
+                    usernameSuggestions.appendChild(li);
                 });
-                usernameSuggestions.appendChild(li);
-            });
-            usernameSuggestions.style.display = 'block';
+                usernameSuggestions.style.display = 'block';
+                return false;
+            }
+        } catch (error) {
+            console.error("Error checking username:", error);
+            usernameFeedback.textContent = 'Error checking availability.';
+            usernameFeedback.classList.remove('valid');
+            return false;
+        }
+    };
+
+    // Username input listener
+    usernameInput.addEventListener('input', () => {
+        const value = usernameInput.value.trim();
+        if (value.length > 0) {
+            checkUsernameAvailability(value);
         } else {
-            usernameFeedback.textContent = 'Username available';
-            usernameFeedback.classList.add('valid');
+            usernameFeedback.textContent = '';
+            usernameSuggestions.innerHTML = '';
+            usernameSuggestions.style.display = 'none';
         }
     });
 
-    // Email Validation 
+    // Email Validation (synchronous check for format only)
     const validateEmail = () => {
         const email = emailInput.value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const value = phoneInput.value.trim();
         const phoneRegex = /^\+?[0-9]{7,15}$/; // supports international format
         if (!phoneRegex.test(value)) {
-            phoneFeedback.textContent = 'Enter a phone number';
+            phoneFeedback.textContent = 'Enter a valid phone number (e.g., +1234567890)';
             phoneFeedback.classList.remove('valid');
         } else {
             phoneFeedback.textContent = 'Valid phone number';
@@ -132,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Password Strength Check
+    // Password Strength Check (Unchanged logic)
     const checkPasswordStrength = (password) => {
         let strength = 0;
         let feedback = '';
@@ -163,8 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
             feedback += 'Include special characters. ';
         }
 
-        strengthBar.className = 'strength-bar'; // Reset class name 
-        if (strength === 0) {
+        strengthBar.className = 'strength-bar'; 
+        if (password.length === 0) {
             strengthBar.style.width = '0%';
             strengthText.textContent = '';
         } else if (strength < 3) {
@@ -194,8 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (password.length === 0) {
             displayError(passwordError, 'Password is required.');
-            strengthBar.style.width = '0%';
-            strengthText.textContent = '';
             return false;
         } else if (strength < 5) {
             displayError(passwordError, `Password is too weak. ${feedback.trim()}`);
@@ -233,10 +357,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
     };
+    
+    // Age/Service Agreement Validation (NEW)
+    const validateAgeAgreement = () => {
+        if (!agreeCheckbox.checked) {
+            displayError(ageAgreementError, 'You must confirm your age and accept the Service Agreement.');
+            return false;
+        } else {
+            clearError(ageAgreementError);
+            return true;
+        }
+    };
 
-    //  Real-time validation
+    //  Real-time validation
     fullNameInput.addEventListener('input', validateFullName);
     emailInput.addEventListener('input', validateEmail);
+    // Note: Username check handled in its own async listener above
     passwordInput.addEventListener('input', () => {
         psi.style.display = 'block';
         validatePassword();
@@ -244,128 +380,112 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     confirmPasswordInput.addEventListener('input', validateConfirmPassword);
     termsCheckbox.addEventListener('change', validateTerms);
+    agreeCheckbox.addEventListener('change', validateAgeAgreement); // NEW listener
 
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
-        // Run all validations
+        // Run all synchronous validations
         const isFullNameValid = validateFullName();
         const isEmailValid = validateEmail();
         const isPasswordValid = validatePassword();
         const isConfirmPasswordValid = validateConfirmPassword();
         const isTermsValid = validateTerms();
+        const isAgeAgreementValid = validateAgeAgreement(); // NEW
 
-        if (isFullNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTermsValid) {
-            // Extract values
+        // Also run the async username check
+        const isUsernameAvailable = await checkUsernameAvailability(usernameInput.value.trim());
+
+        // Check if all validations pass
+        if (isFullNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTermsValid && isAgeAgreementValid && isUsernameAvailable) {
+            
+            // Extract all form values
             const fullName = fullNameInput.value.trim();
             const username = usernameInput.value.trim();
             const email = emailInput.value.trim();
             const phone = phoneInput.value.trim();
             const password = passwordInput.value;
+            const accountType = accountTypeInput.value;
+            const country = countryInput.value;
+            const currency = currencyInput.value;
 
+
+            // Show loading state
+            showModal('Registering...', 'Creating your account...', false, true); // true for spinner
+            
             try {
-                // 1. Check if email already exists (essential for blocking deleted users)
-                const emailCheckRes = await fetch(`${API_USERS}?email=${encodeURIComponent(email)}`);
-                if (!emailCheckRes.ok) throw new Error('API server error during email check.');
+                // 1. 🔑 STEP 1: Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const uid = user.uid;
 
-                const existingUsersByEmail = await emailCheckRes.json();
+                // 2. 📝 STEP 2: Update Auth Profile (set display name/username)
+                await updateProfile(user, {
+                    displayName: username
+                });
                 
-                // 🛑 NEW CHECK: BLOCKS RE-REGISTRATION BY DELETED USERS USING THE SAME EMAIL 🛑
-                if (existingUsersByEmail.length > 0) {
-                    displayError(emailError, 'This email is already registered. If this was a mistake, please contact support.');
-                    return; // STOP execution
-                }
-
-                // 2. Check if username exists (This must be done separately if we want to provide specific feedback for username vs. email)
-                const usernameCheckRes = await fetch(`${API_USERS}?username=${encodeURIComponent(username)}`);
-                if (!usernameCheckRes.ok) throw new Error('API server error during username check.');
-
-                const existingUsersByUsername = await usernameCheckRes.json();
-
-                if (existingUsersByUsername.length > 0) {
-                    displayError(usernameError, 'Username is already taken.');
-                    return; // STOP execution
-                }
-
-                // 3. If neither email nor username exists, register new user
-                const newUser = {
-                    fullName,
-                    username,
-                    email,
-                    phone,
-                    password, // In real-world apps, never store raw passwords!
-                    // Initialize new user with required default fields for dashboard and security
-                    balance: 0,
-                    roi: 0,
-                    deposits: 0,
+                // 3. 💾 STEP 3: Create User Document in Firestore
+                const newUserDoc = {
+                    fullName: fullName,
+                    username: username,
+                    email: email,
+                    phone: phone,
+                    accountType: accountType,
+                    country: country,
+                    currency: currency,
+                    // Initialize required dashboard/admin fields
+                    balance: 0.00,
+                    roi: 0.00,
+                    deposits: 0.00,
                     activeTrades: 0,
                     isFrozen: false,
-                    isBanned: false
+                    isBanned: false,
+                    createdAt: new Date().toISOString(),
                 };
 
-                const postRes = await fetch(API_USERS, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(newUser)
-                });
+                // Use the Firebase Auth UID as the Firestore document ID
+                await setDoc(doc(db, "users", uid), newUserDoc);
 
-                if (!postRes.ok) {
-                    throw new Error('Failed to register user.');
-                }
-
-                // Show success modal
-                modalMessage.textContent = '✅ Registration successful! You will be redirected to the login page in 3 seconds.';
-                modal.style.display = 'block';
-
-                setTimeout(() => {
-                    window.location.href = "../login/login.html";
-                }, 3000);
-
-                closeBtn.addEventListener('click', () => {
-                    modal.style.display = 'none';
-                });
-
-                window.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        modal.style.display = 'none';
-                    }
-                });
+                // 4. ✅ Successful Registration
+                showModal('Registration Successful', `Welcome, ${username}! Please log in now. Redirecting...`, false); 
 
                 form.reset();
                 strengthBar.style.width = '0%';
                 strengthText.textContent = '';
-                document.querySelectorAll('input').forEach(input => {
+                document.querySelectorAll('input, select').forEach(input => {
                     input.classList.remove('valid', 'invalid');
                 });
+                
+                // Redirect after a short delay
+                setTimeout(() => {
+                    window.location.href = "../login/login.html";
+                }, 2000);
 
-            } catch (err) {
-                console.error('Error:', err);
-                modalMessage.textContent = '❌ An error occurred while registering. Please try again.';
-                modal.style.display = 'block';
+            } catch (error) {
+                console.error('Firebase Registration Error:', error);
+                
+                let errorMessage = "An unexpected error occurred. Please try again.";
+
+                // 💬 IMPROVED ERROR HANDLING based on Firebase Auth codes
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'This email is already registered. Please log in or use a different email.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'The password is too weak. Please use a stronger password.';
+                        break;
+                    default:
+                        errorMessage = error.message.replace('Firebase: ', '');
+                        break;
+                }
+                showModal('Registration Failed', errorMessage, true);
             }
 
         } else {
-            modalMessage.textContent = '⚠️ Please correct the errors in the form.';
-            modal.style.display = 'block';
+            // If any sync or async validation fails
+            showModal('Validation Error', '⚠️ Please correct the errors marked in the form.', true);
         }
     });
 
-
-    /* Eye toggle - commented out in original, kept commented */
-    // const toggles = document.querySelectorAll('.toggle-eye');
-
-    // toggles.forEach(toggle => {
-    //     toggle.addEventListener('click', () => {
-    //         const inputId = toggle.getAttribute('data-target');
-
-    //         const isPassword = input.type === 'password';
-    //         input.type = isPassword ? 'text' : 'password';
-    //         toggle.classList.toggle('fa-eye', !isPassword);
-    //         toggle.classList.toggle('fa-eye-slash', isPassword);
-    //         toggle.style.color = isPassword ? '#0066cc' : '#666';
-    //     });
-    // });
 });
