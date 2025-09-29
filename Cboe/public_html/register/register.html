@@ -5,37 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="../assets/css/register.css">
-    <!-- ✅ FIXED: Removed trailing spaces in CDN URL -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     
-    <!-- ✅ FIXED: Use GLOBAL Firebase (not modules) for compatibility with register.js -->
-    <!-- Remove the <script type="module"> block entirely -->
-    <!-- Instead, use standard script tags for Firebase compat SDK -->
+    <!-- ✅ GLOBAL FIREBASE SDK (NOT MODULE) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script>
-        // ✅ FIXED: Initialize Firebase in global scope (NOT module)
+        // Initialize Firebase globally
         const firebaseConfig = {
             apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
             authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com", // ✅ Removed trailing spaces
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
             projectId: "cboefirebaseserver",
             storageBucket: "cboefirebaseserver.firebasestorage.app",
             messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-            measurementId: "G-FCZEERNC06"
+            appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        
-        // Make services globally available for register.js
         window.auth = firebase.auth();
         window.db = firebase.firestore();
-        
-        console.log("Firebase initialized globally.");
     </script>
+
 </head>
 
 <body>
@@ -174,7 +165,8 @@
         </div>
     </div>
 
-    <!-- ✅ FIXED: Use standard script tag (NOT type="module") -->
+
+    <!-- ✅ LOAD REGISTER.JS AS GLOBAL SCRIPT (NOT MODULE) -->
     <script src="../assets/js/register.js"></script>
 </body>
 </html>
