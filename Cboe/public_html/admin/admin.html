@@ -1,29 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
-    <link rel="stylesheet" href="./assets/css/admin.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="../assets/css/admin.css" />
 </head>
 <body>
-    <div class="admin-login-container">
-        <h2>Admin Login</h2>
-        <form id="adminLoginForm">
-            <input type="email" id="adminEmail" placeholder="Admin Email" required> 
-            
-            <input type="password" id="adminPassword" placeholder="Password" required>
-            
-            <button type="submit">Login</button>
-            <p id="adminLoginError" class="error-msg"></p>
-        </form>
-    </div>
+  <div class="admin-login-container">
+    <h2>Admin Login</h2>
+    <form id="adminLoginForm">
+      <input type="email" id="adminEmail" placeholder="Admin Email" required />
+      <input type="password" id="adminPassword" placeholder="Password" required />
+      <button type="submit">Login</button>
+      <p id="adminLoginError" class="error-msg"></p>
+    </form>
+  </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    
-    <script src="../firebase-config.js"></script> 
-    
-    <script src="./assets/js/admin.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { firebaseConfig } from "../firebase-config.js"; // adjust path
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Make Firebase available globally if admin.js needs it
+    window.firebaseApp = app;
+    window.auth = auth;
+  </script>
+
+  <script type="module" src="../assets/js/admin.js"></script>
 </body>
 </html>
