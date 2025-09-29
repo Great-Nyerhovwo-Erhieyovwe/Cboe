@@ -1,4 +1,4 @@
-// dashboard.js - COMPLETE VERSION WITH FIREBASE + TRADINGVIEW + CHART.JS
+// dashboard.js - COMPLETE + FIXED VERSION
 import { 
   doc, 
   getDoc, 
@@ -76,7 +76,7 @@ function showPopup(message, isSuccess = true) {
   popup.style.cssText = `
     background-color: ${isSuccess ? '#4CAF50' : '#f44336'};
     color: white;
-    padding: 100px 20px;
+    padding: 10px 20px;
     margin-top: 10px;
     border-radius: 4px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -160,10 +160,12 @@ function listenToUserData() {
       return;
     }
 
-    // Update UI
+    // ✅ FIXED: Profile name with fallback to email
     if (profileNameEl) {
-      profileNameEl.textContent = `Welcome, ${userProfile.username || user.email}`;
+      const displayName = userProfile.username || user.email || 'User';
+      profileNameEl.textContent = `Welcome, ${displayName}`;
     }
+    
     if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(userProfile.balance || 0);
     if (roiEl) roiEl.textContent = formatUSD(userProfile.roi || 0);
     if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(userProfile.activeTrades || 0);
@@ -176,7 +178,9 @@ function listenToUserData() {
 
 // Real-time transactions
 let notifiedTransactionIds = new Set();
-const userId = auth.currentUser?.uid;
+const user = auth.currentUser;
+const userId = user ? user.uid : null; // ✅ Get userId safely
+
 if (userId) {
   const stored = localStorage.getItem(`notifiedTransactions_${userId}`);
   if (stored) {
@@ -200,7 +204,6 @@ function listenToTransactions() {
       const tx = { id: doc.id, ...doc.data() };
       transactions.push(tx);
 
-      // Show popups for new statuses
       if (
         (tx.status === 'approved' || tx.status === 'declined') &&
         !notifiedTransactionIds.has(tx.id)
@@ -213,7 +216,6 @@ function listenToTransactions() {
       }
     });
     
-    // Render transactions
     transactionList.innerHTML = '';
     transactions
       .sort((a, b) => {
@@ -261,10 +263,18 @@ function clearInputs(modal) {
   }
 }
 
-// Deposit handler
+// ✅ FIXED: Deposit handler with proper userId
 if (confirmAddBtn) {
   confirmAddBtn.addEventListener('click', async (e) => {
     e.preventDefault();
+    
+    // ✅ ALWAYS get user from auth
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
     if (userProfile.isFrozen) {
       statusAdd.textContent = '❌ Transactions are frozen by admin.';
       statusAdd.style.color = 'red';
@@ -278,22 +288,17 @@ if (confirmAddBtn) {
       return;
     }
 
-    const coin = coinTypeSelect?.value || 'USDT';
-    const network = networkTypeSelect?.value || 'TRC-20';
-
     statusAdd.textContent = " ⏳ Submitting...";
     statusAdd.style.color = 'black';
 
     try {
+      // ✅ CORRECT FIELD NAME: userId (not userld)
       await addDoc(collection(db, "transactions"), {
-        userId: userId,
+        userId: currentUser.uid, // ✅ Guaranteed valid
         type: 'deposit',
         amount: amount,
-        coin: coin,
-        network: network,
         status: 'pending',
-        createdAt: new Date(),
-        username: userProfile.username || 'N/A'
+        createdAt: new Date()
       });
 
       statusAdd.textContent = " ✅ Request submitted!";
@@ -302,16 +307,24 @@ if (confirmAddBtn) {
       showPopup(`Deposit of ${formatUSD(amount)} submitted.`, true);
 
     } catch (err) {
-      statusAdd.textContent = '❌ ' + err.message;
+      console.error("Deposit error:", err);
+      statusAdd.textContent = '❌ ' + (err.message || 'Submission failed');
       statusAdd.style.color = 'red';
     }
   });
 }
 
-// Withdraw handler
+// ✅ FIXED: Withdraw handler with proper userId
 if (confirmWithdrawBtn) {
   confirmWithdrawBtn.addEventListener('click', async (e) => {
     e.preventDefault();
+    
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
     if (userProfile.isFrozen) {
       statusWithdraw.textContent = '❌ Transactions are frozen by admin.';
       statusWithdraw.style.color = 'red';
@@ -343,13 +356,12 @@ if (confirmWithdrawBtn) {
 
     try {
       await addDoc(collection(db, "transactions"), {
-        userId: userId,
+        userId: currentUser.uid, // ✅ CORRECT
         type: 'withdrawal',
         amount: amount,
         walletAddress: walletAddress,
         status: 'pending',
-        createdAt: new Date(),
-        username: userProfile.username || 'N/A'
+        createdAt: new Date()
       });
 
       statusWithdraw.textContent = " ✅ Request submitted!";
@@ -358,7 +370,8 @@ if (confirmWithdrawBtn) {
       showPopup(`Withdrawal of ${formatUSD(amount)} submitted.`, true);
 
     } catch (err) {
-      statusWithdraw.textContent = '❌ ' + err.message;
+      console.error("Withdraw error:", err);
+      statusWithdraw.textContent = '❌ ' + (err.message || 'Submission failed');
       statusWithdraw.style.color = 'red';
     }
   });
@@ -399,10 +412,8 @@ function initTradingView() {
   const isDarkMode = document.body.classList.contains("dark-mode");
   const theme = isDarkMode ? "dark" : "light";
 
-  // Clear previous widget
   container.innerHTML = '';
 
-  // Load TradingView script
   let script = document.createElement('script');
   script.src = 'https://s3.tradingview.com/tv.js';
   script.onload = () => {
@@ -415,11 +426,6 @@ function initTradingView() {
         theme: theme,
         style: "1",
         locale: "en",
-        toolbar_bg: "#f1f3f6",
-        enable_publishing: false,
-        hide_side_toolbar: false,
-        allow_symbol_change: true,
-        studies: [],
         width: "100%",
         height: 400
       });
@@ -435,18 +441,17 @@ function initChart() {
   const ctx = document.getElementById('analyticsChart')?.getContext('2d');
   if (!ctx) return;
 
-  // Destroy existing chart if any
   if (window.dashboardChart) {
     window.dashboardChart.destroy();
   }
 
   window.dashboardChart = new Chart(ctx, {
     type: 'line',
-    data: {
+     {
       labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
       datasets: [{
         label: 'Portfolio Value',
-        data: [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
+         [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
         borderColor: '#dc691e',
         borderWidth: 2,
         fill: false,
@@ -463,9 +468,7 @@ function initChart() {
             callback: value => `$${value / 1000}K`,
             color: '#999'
           },
-          grid: {
-            color: '#eee'
-          }
+          grid: { color: '#eee' }
         },
         x: {
           ticks: { color: '#888' },
@@ -481,18 +484,14 @@ function initChart() {
             }
           }
         },
-        legend: {
-          labels: {
-            color: '#555',
-          }
-        }
+        legend: { labels: { color: '#555' } }
       }
     }
   });
 }
 
 // ====================================================================
-// === UI EVENT LISTENERS (SIDEBAR, THEME, PROFILE) ===
+// === UI EVENT LISTENERS ===
 // ====================================================================
 function initUI() {
   // Theme toggle
@@ -512,7 +511,6 @@ function initUI() {
         themeIcon.classList.replace("fa-sun", "fa-moon");
         localStorage.setItem('theme', 'light-mode');
       }
-      // Reload TradingView with new theme
       setTimeout(initTradingView, 300);
     });
   }
@@ -525,7 +523,7 @@ function initUI() {
       if (mediaQuery.matches) {
         sidebar.classList.toggle("open");
         mainContent.classList.toggle("pushed-mobile");
-        mobileOverlay.classList.toggle("visible");
+        if (mobileOverlay) mobileOverlay.classList.toggle("visible");
         sidebarToggleBtn.classList.toggle("is-active");
       } else if (dashboardContainer) {
         dashboardContainer.classList.toggle("sidebar-collapsed");
@@ -577,23 +575,17 @@ function initUI() {
 // === INITIALIZE DASHBOARD ===
 // ====================================================================
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize UI first
   initUI();
-  
-  // Initialize widgets
   initTradingView();
   initChart();
-  
-  // Fetch wallet config once
   fetchWalletConfig();
   
   // Start real-time listeners
   const unsubscribeUser = listenToUserData();
   const unsubscribeTransactions = listenToTransactions();
   
-  // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
     unsubscribeUser?.();
     unsubscribeTransactions?.();
   });
-});
+});});
