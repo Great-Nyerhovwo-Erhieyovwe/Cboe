@@ -1,665 +1,573 @@
 // ./assets/js/admin-dashboard.js
-// FINAL VERSION with modular imports and security check
+// Complete, robust admin dashboard script (modular Firebase, defensive, no missing pieces)
 
-// 🛑 FIREBASE IMPORTS (Modular Syntax) 🛑
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    updateDoc, 
-    deleteDoc, 
-    onSnapshot, 
-    query, 
-    where, 
-    addDoc, 
-    getDoc,
-    serverTimestamp // Added for accurate server-side timestamping
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  addDoc,
+  getDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 
-// === Configuration & Constants ===
-// 🛑 IMPORTANT: PASTE YOUR ACTUAL FIREBASE CONFIG HERE 🛑
+/* ===========================
+   CONFIG & CONSTANTS
+   =========================== */
 const firebaseConfig = {
-    apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-    authDomain: "cboefirebaseserver.firebaseapp.com",
-    projectId: "cboefirebaseserver",
-    storageBucket: "cboefirebaseserver.firebasestorage.app",
-    messagingSenderId: "755491003217",
-    appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+  apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+  authDomain: "cboefirebaseserver.firebaseapp.com",
+  projectId: "cboefirebaseserver",
+  storageBucket: "cboefirebaseserver.firebasestorage.app",
+  messagingSenderId: "755491003217",
+  appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
 };
 
-const LOGIN_PAGE = 'admin.html'; 
-const ADMIN_CHECK_COLLECTION = 'admins'; 
+const LOGIN_PAGE = "admin.html";
+const PUBLIC_USERS_COLLECTION = "users";
+const PUBLIC_TRANSACTIONS_COLLECTION = "transactions";
+const PUBLIC_MESSAGES_COLLECTION = "messages";
 
-// === Firestore Collection Paths ===
-const PUBLIC_USERS_COLLECTION = `users`;
-const PUBLIC_TRANSACTIONS_COLLECTION = `transactions`;
-const PUBLIC_MESSAGES_COLLECTION = `messages`;
+/* ===========================
+   FIREBASE SERVICE REFERENCES
+   =========================== */
+let app = null;
+let db = null;
+let auth = null;
 
-// === Firebase Services ===
-let db;
-let auth;
+/* ===========================
+   DOM refs (populated later)
+   =========================== */
+let usersTableBody = null;
+let transactionsTableBody = null;
+let messageContainer = null;
 
-// === Custom Modal DOM (Needed to fix the missing element error) ===
-const messageModalHTML = `
-    <div id="messageModal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
-        <div style="background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
-            <h3 style="margin-top: 0;">Send Message / Bill User</h3>
-            <p id="modalUserInfo" style="font-weight: bold; margin-bottom: 15px;"></p>
-            
-            <label for="messageText">Message:</label>
-            <textarea id="messageText" rows="4" style="width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+let modalUserInfo = null;
+let messageText = null;
+let billingAmount = null;
+let sendMessageBtn = null;
+let closeModalBtn = null;
+let modalStatus = null;
+let messageModal = null;
 
-            <label for="billingAmount">Billing Amount (Optional, will subtract from balance):</label>
-            <input type="number" id="billingAmount" min="0" step="0.01" placeholder="e.g., 50.00" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px;">
-            
-            <div id="modalStatus" style="margin-bottom: 10px; font-weight: bold;"></div>
+let logoutBtn = null;
+let dropdownLogout = null;
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="closeModalBtn" style="padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: pointer;">Cancel</button>
-                <button id="sendMessageBtn" style="padding: 8px 15px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer;">Send Action</button>
-            </div>
-        </div>
-    </div>
-`;
-document.body.insertAdjacentHTML('beforeend', messageModalHTML);
-
-// === DOM Elements ===
-// NOTE: These are safe because they are accessed inside DOMContentLoaded or after init()
-const dashboardContainer = document.getElementById("dashboard-container");
-const sidebarToggleBtn = document.getElementById("sidebar-toggle");
-const hamburgerIcon = document.querySelector("#sidebar-toggle i");
-const messageContainer = document.getElementById('message-container');
-const usersTableBody = document.getElementById('users-table-body') || document.querySelector('#users-table tbody');
-const transactionsTableBody = document.getElementById('transactions-table-body') || document.querySelector('#transactions-table tbody');
-const profileDropdown = document.getElementById("profile-dropdown");
-const dropdownMenu = profileDropdown?.querySelector(".dropdown-menu");
-const logoutBtn = document.getElementById("logout-btn");
-const dropdownLogout = document.getElementById("dropdown-logout");
-
-// Message Modal elements (Now guaranteed to exist)
-const modalUserInfo = document.getElementById('modalUserInfo');
-const messageText = document.getElementById('messageText');
-const billingAmount = document.getElementById('billingAmount');
-const sendMessageBtn = document.getElementById('sendMessageBtn');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const modalStatus = document.getElementById('modalStatus');
-const messageModal = document.getElementById('messageModal');
-
-
-// === State ===
-let users = [];
-let transactions = [];
+let listenersAttached = false; // to avoid double-binding
 let selectedUserId = null;
 
-// === Custom Confirmation Modal (Defined in the original code) ===
-const confirmationModal = document.createElement('div');
-confirmationModal.id = 'confirmationModal';
-confirmationModal.style.cssText = 'display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;';
-confirmationModal.innerHTML = `
-    <div style="background: white; padding: 25px; border-radius: 8px; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 id="conf-title" style="margin-top: 0; color: #333;">Confirm Action</h3>
-        <p id="conf-message" style="margin-bottom: 20px; color: #555;"></p>
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button id="conf-cancel" style="padding: 8px 15px; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: pointer;">Cancel</button>
-            <button id="conf-ok" style="padding: 8px 15px; border: none; border-radius: 4px; background: #dc3545; color: white; cursor: pointer;">Confirm</button>
+/* ===========================
+   UTIL: ensure DOM ready
+   =========================== */
+function domReady() {
+  if (document.readyState !== "loading") return Promise.resolve();
+  return new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve, { once: true }));
+}
+
+/* ===========================
+   UI Helpers
+   =========================== */
+function ensureMessageContainer() {
+  if (messageContainer) return;
+  messageContainer = document.getElementById("message-container");
+  if (!messageContainer) {
+    messageContainer = document.createElement("div");
+    messageContainer.id = "message-container";
+    messageContainer.style.position = "fixed";
+    messageContainer.style.top = "20px";
+    messageContainer.style.right = "20px";
+    messageContainer.style.zIndex = "9999";
+    document.body.appendChild(messageContainer);
+  }
+}
+
+function showMessage(text, type = "success") {
+  ensureMessageContainer();
+  const div = document.createElement("div");
+  div.className = `admin-msg ${type}`;
+  div.textContent = text;
+  div.style.marginTop = "8px";
+  div.style.padding = "10px 14px";
+  div.style.borderRadius = "6px";
+  div.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+  div.style.background = type === "success" ? "#0f9d58" : "#e74c3c";
+  div.style.color = "white";
+  div.style.fontWeight = "600";
+  messageContainer.prepend(div);
+  setTimeout(() => {
+    div.style.opacity = "0";
+    setTimeout(() => div.remove(), 400);
+  }, 3500);
+}
+
+/* Confirmation modal (single instance) */
+function ensureConfirmationModal() {
+  let m = document.getElementById("confirmationModal");
+  if (m) return m;
+  m = document.createElement("div");
+  m.id = "confirmationModal";
+  m.style.cssText = "display:none;position:fixed;z-index:10000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;";
+  m.innerHTML = `
+    <div style="background:#fff;padding:20px;border-radius:8px;max-width:520px;width:90%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+      <h3 id="conf-title" style="margin:0 0 10px 0"></h3>
+      <div id="conf-message" style="margin-bottom:16px;color:#333"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button id="conf-cancel" style="padding:8px 12px;border-radius:6px;border:1px solid #ddd;background:#f1f1f1;cursor:pointer">Cancel</button>
+        <button id="conf-ok" style="padding:8px 12px;border-radius:6px;border:none;background:#dc3545;color:#fff;cursor:pointer">Confirm</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  return m;
+}
+
+function showConfirmation(title, messageHtml, callback) {
+  const modal = ensureConfirmationModal();
+  modal.style.display = "flex";
+  const ok = document.getElementById("conf-ok");
+  const cancel = document.getElementById("conf-cancel");
+  document.getElementById("conf-title").textContent = title;
+  document.getElementById("conf-message").innerHTML = messageHtml;
+
+  const handleOk = () => {
+    cleanup();
+    callback(true);
+  };
+  const handleCancel = () => {
+    cleanup();
+    callback(false);
+  };
+  function cleanup() {
+    ok.removeEventListener("click", handleOk);
+    cancel.removeEventListener("click", handleCancel);
+    modal.style.display = "none";
+  }
+  ok.addEventListener("click", handleOk);
+  cancel.addEventListener("click", handleCancel);
+}
+
+/* ===========================
+   Inject modals/HTML fragments (safe)
+   =========================== */
+function injectModalsIfMissing() {
+  // message modal (for billing/message)
+  if (!document.getElementById("messageModal")) {
+    const html = `
+      <div id="messageModal" style="display:none;position:fixed;z-index:10001;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:8px;padding:18px;max-width:640px;width:92%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+          <h3 style="margin:0 0 10px 0">Send Message / Bill User</h3>
+          <p id="modalUserInfo" style="font-weight:600;margin:6px 0 12px 0"></p>
+          <label style="display:block;margin-bottom:6px">Message</label>
+          <textarea id="messageText" rows="4" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;margin-bottom:12px"></textarea>
+          <label style="display:block;margin-bottom:6px">Billing Amount (optional)</label>
+          <input id="billingAmount" type="number" min="0" step="0.01" placeholder="e.g. 50.00" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;margin-bottom:12px" />
+          <div id="modalStatus" style="min-height:20px;margin-bottom:12px;font-weight:600"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button id="closeModalBtn" style="padding:8px 12px;border-radius:6px;border:1px solid #ddd;background:#f1f1f1;cursor:pointer">Cancel</button>
+            <button id="sendMessageBtn" style="padding:8px 12px;border-radius:6px;border:none;background:#007bff;color:#fff;cursor:pointer">Send Action</button>
+          </div>
         </div>
-    </div>
-`;
-document.body.appendChild(confirmationModal);
-
-
-function showConfirmation(title, message, callback) {
-    const modal = document.getElementById('confirmationModal');
-    document.getElementById('conf-title').textContent = title;
-    document.getElementById('conf-message').innerHTML = message; // Use innerHTML to allow **bold**
-    
-    modal.style.display = 'flex';
-    
-    // Use named functions for proper event listener removal
-    const handleOk = () => {
-        modal.style.display = 'none';
-        document.getElementById('conf-ok').removeEventListener('click', handleOk);
-        document.getElementById('conf-cancel').removeEventListener('click', handleCancel);
-        callback(true);
-    };
-
-    const handleCancel = () => {
-        modal.style.display = 'none';
-        document.getElementById('conf-ok').removeEventListener('click', handleOk);
-        document.getElementById('conf-cancel').removeEventListener('click', handleCancel);
-        callback(false);
-    };
-
-    // Ensure we clear previous listeners before adding new ones
-    document.getElementById('conf-ok').removeEventListener('click', handleOk);
-    document.getElementById('conf-cancel').removeEventListener('click', handleCancel);
-    
-    document.getElementById('conf-ok').addEventListener('click', handleOk);
-    document.getElementById('conf-cancel').addEventListener('click', handleCancel);
+      </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", html);
+  }
 }
 
-function showMessage(text, type = 'success') {
-    if (!messageContainer) return;
-    messageContainer.innerHTML = '';
-    const div = document.createElement('div');
-    div.className = 'message ' + type;
-    div.textContent = text;
-    messageContainer.appendChild(div);
-    setTimeout(() => div.remove(), 4000);
+/* ===========================
+   Query & store DOM refs
+   (call after DOM ready)
+   =========================== */
+function cacheDomRefs() {
+  usersTableBody = document.getElementById("users-table-body") || document.querySelector("#users-table tbody");
+  transactionsTableBody = document.getElementById("transactions-table-body") || document.querySelector("#transactions-table tbody");
+  messageContainer = document.getElementById("message-container");
+
+  modalUserInfo = document.getElementById("modalUserInfo");
+  messageText = document.getElementById("messageText");
+  billingAmount = document.getElementById("billingAmount");
+  sendMessageBtn = document.getElementById("sendMessageBtn");
+  closeModalBtn = document.getElementById("closeModalBtn");
+  modalStatus = document.getElementById("modalStatus");
+  messageModal = document.getElementById("messageModal");
+
+  logoutBtn = document.getElementById("logout-btn");
+  dropdownLogout = document.getElementById("dropdown-logout");
 }
 
-
-// === Core Data Listeners ===
-
-/**
- * Sets up a real-time listener for all users.
- */
-function setupUsersListener() {
-    if (!db || !usersTableBody) return;
-
-    const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
-    
-    const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-        users = [];
-        snapshot.forEach(doc => {
-            users.push({ id: doc.id, ...doc.data() });
-        });
-        renderUsers();
-        // Re-attach listeners *after* rendering the table rows
-        addTableEventListeners(); 
-    }, (error) => {
-        console.error("Error fetching users:", error);
-        showMessage("Failed to load users in real-time.", 'error');
-    });
-    return unsubscribe;
-}
-
-/**
- * Sets up a real-time listener for pending transactions.
- */
-function setupTransactionsListener() {
-    if (!db || !transactionsTableBody) return;
-
-    const transactionsRef = collection(db, PUBLIC_TRANSACTIONS_COLLECTION);
-    // Query for 'pending' status transactions
-    const q = query(transactionsRef, where("status", "==", "pending"));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        transactions = [];
-        snapshot.forEach(doc => {
-            transactions.push({ id: doc.id, ...doc.data() });
-        });
-        renderTransactions();
-    }, (error) => {
-        console.error("Error fetching pending transactions:", error);
-        showMessage("Failed to load transactions in real-time.", 'error');
-    });
-    return unsubscribe;
-}
-
-
-// === Rendering Functions ===
-
+/* ===========================
+   Renderers
+   =========================== */
 function renderUsers() {
-    if (!usersTableBody) return;
-    usersTableBody.innerHTML = '';
+  if (!usersTableBody) return;
+  usersTableBody.innerHTML = "";
+  users.forEach(user => {
+    const tr = document.createElement("tr");
+    const balanceNum = Number(user.balance) || 0;
+    const isBanned = user.isBanned === true;
+    const isFrozen = user.isFrozen === true;
+    const statusText = isBanned ? "BANNED" : (isFrozen ? "FROZEN" : "Active");
+    const statusColor = isBanned ? "red" : (isFrozen ? "orange" : "green");
 
-    users.forEach(user => {
-        const tr = document.createElement('tr');
-        const balanceNum = Number(user.balance) || 0;
-        
-        const isBanned = user.isBanned === true;
-        const isFrozen = user.isFrozen === true;
-
-        const statusText = isBanned ? 'BANNED' : (isFrozen ? 'FROZEN' : 'Active');
-        const statusColor = isBanned ? 'red' : (isFrozen ? 'orange' : 'green');
-
-        tr.innerHTML = `
-            <td><code title="User ID: ${user.id}">${user.id.substring(0, 8)}...</code></td>
-            <td>${user.username || 'N/A'}</td>
-            <td>${user.email}</td>
-            <td>$${balanceNum.toFixed(2)}</td>
-            <td>
-                <input type="number" min="0" step="0.01" placeholder="New balance" id="balance-input-${user.id}" value="${balanceNum.toFixed(2)}" />
-                <button class="update-btn" data-userid="${user.id}">Update</button>
-            </td>
-            <td>
-                <button class="send-message-btn" data-userid="${user.id}" data-username="${user.username || user.email}">Message/Bill</button>
-            </td>
-            <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
-            <td>
-                <button class="action-btn ban-btn" data-user-id="${user.id}" data-action="ban">
-                    ${isBanned ? 'Unban' : 'Ban Access'}
-                </button>
-                <button class="action-btn freeze-btn" data-user-id="${user.id}" data-action="freeze">
-                    ${isFrozen ? 'Unfreeze Txn' : 'Freeze Txn'}
-                </button>
-                <button class="action-btn delete-btn" data-user-id="${user.id}" data-action="delete">
-                    Delete User
-                </button>
-            </td>
-        `;
-
-        usersTableBody.appendChild(tr);
-    });
+    tr.innerHTML = `
+      <td><code title="ID: ${user.id}">${user.id.substring(0,8)}...</code></td>
+      <td>${user.username || "N/A"}</td>
+      <td>${user.email || ""}</td>
+      <td>$${balanceNum.toFixed(2)}</td>
+      <td>
+        <input id="balance-input-${user.id}" type="number" step="0.01" value="${balanceNum.toFixed(2)}" style="width:120px;padding:6px;border:1px solid #ddd;border-radius:6px" />
+        <button class="update-btn" data-userid="${user.id}" style="margin-left:8px;padding:6px 10px;border-radius:6px">Update</button>
+      </td>
+      <td><button class="send-message-btn" data-userid="${user.id}" data-username="${(user.username || user.email || '')}" style="padding:6px 10px;border-radius:6px">Message/Bill</button></td>
+      <td style="color:${statusColor};font-weight:700">${statusText}</td>
+      <td>
+        <button class="action-btn" data-user-id="${user.id}" data-action="ban">${isBanned ? "Unban" : "Ban"}</button>
+        <button class="action-btn" data-user-id="${user.id}" data-action="freeze" style="margin-left:6px">${isFrozen ? "Unfreeze" : "Freeze"}</button>
+        <button class="action-btn" data-user-id="${user.id}" data-action="delete" style="margin-left:6px;background:#dc3545;color:#fff;border:none;padding:6px 8px;border-radius:6px">Delete</button>
+      </td>
+    `;
+    usersTableBody.appendChild(tr);
+  });
 }
 
 function renderTransactions() {
-    if (!transactionsTableBody) return;
-    transactionsTableBody.innerHTML = '';
+  if (!transactionsTableBody) return;
+  transactionsTableBody.innerHTML = "";
+  if (!transactions || transactions.length === 0) {
+    transactionsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px">No pending transactions</td></tr>`;
+    return;
+  }
 
-    if (transactions.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5" style="text-align:center; padding: 20px;">No pending transactions</td>`;
-        transactionsTableBody.appendChild(tr);
-        return;
-    }
+  transactions.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-    // Sort by timestamp if available (newest first)
-    transactions.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-    transactions.forEach(tx => {
-        const user = users.find(u => u.id == tx.userId);
-        const tr = document.createElement('tr');
-
-        tr.innerHTML = `
-            <td><code title="TXN ID: ${tx.id}">${tx.id.substring(0, 8)}...</code></td>
-            <td>${user ? user.username || user.email : tx.username || 'Unknown'}</td>
-            <td style="text-transform: capitalize;">${tx.type}</td>
-            <td>$${Number(tx.amount).toFixed(2)}</td>
-            <td>
-                <button class="approve-btn" data-txid="${tx.id}">Approve</button>
-                <button class="reject-btn" data-txid="${tx.id}">Reject</button>
-            </td>
-        `;
-
-        transactionsTableBody.appendChild(tr);
-    });
+  transactions.forEach(tx => {
+    const user = users.find(u => u.id === tx.userId);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><code title="TX: ${tx.id}">${tx.id.substring(0,8)}...</code></td>
+      <td>${user ? (user.username || user.email) : (tx.username || "Unknown")}</td>
+      <td style="text-transform:capitalize">${tx.type || ""}</td>
+      <td>$${Number(tx.amount || 0).toFixed(2)}</td>
+      <td>
+        <button class="approve-btn" data-txid="${tx.id}" style="padding:6px 10px;border-radius:6px">Approve</button>
+        <button class="reject-btn" data-txid="${tx.id}" style="margin-left:6px;padding:6px 10px;border-radius:6px">Reject</button>
+      </td>
+    `;
+    transactionsTableBody.appendChild(tr);
+  });
 }
 
-
-// === Data Operations (Firestore) ===
-
-// 1. Update Balance (Firestore: updateDoc)
+/* ===========================
+   Firestore data operations
+   =========================== */
 async function updateUserBalance(userId, newBalance) {
-    try {
-        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
-        
-        await updateDoc(userDocRef, {
-            balance: parseFloat(newBalance.toFixed(2))
-        });
-        
-        showMessage('Balance updated successfully', 'success');
-    } catch (err) {
-        showMessage(`Failed to update balance: ${err.message}`, 'error');
-        console.error("Firestore Error:", err);
-    }
-}
-
-// 2. Admin Actions (Ban/Freeze/Delete) (Firestore: updateDoc or deleteDoc)
-async function handleUserAction(userId, action) {
-    const user = users.find(u => u.id == userId);
-    if (!user) {
-        showMessage('User not found in local data.', 'error');
-        return;
-    }
-    
+  try {
     const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
-    let updatePayload = {};
-
-    try {
-        switch (action) {
-            case 'ban':
-                updatePayload = { isBanned: !user.isBanned };
-                await updateDoc(userDocRef, updatePayload);
-                showMessage(`${user.username || user.email} successfully ${updatePayload.isBanned ? 'banned' : 'unbanned'}.`, 'success');
-                break;
-            case 'freeze':
-                updatePayload = { isFrozen: !user.isFrozen };
-                await updateDoc(userDocRef, updatePayload);
-                showMessage(`Transaction status ${updatePayload.isFrozen ? 'FROZEN' : 'UNFROZEN'} for ${user.username || user.email}.`, 'success');
-                break;
-            case 'delete':
-                await deleteDoc(userDocRef);
-                showMessage(`User ${user.username || user.email} deleted permanently.`, 'success');
-                break;
-            default:
-                console.error('Unknown admin action:', action);
-                return;
-        }
-
-    } catch (error) {
-        showMessage(`Failed to perform ${action}: ${error.message}`, 'error');
-        console.error(`Admin action error (${action}):`, error);
-    }
+    await updateDoc(userDocRef, { balance: parseFloat(Number(newBalance).toFixed(2)) });
+    showMessage("Balance updated", "success");
+  } catch (err) {
+    console.error("updateUserBalance error:", err);
+    showMessage(`Failed to update balance: ${err.message}`, "error");
+  }
 }
 
-// 3. Approve Transaction
-async function approveTransaction(tx) {
-    try {
-        const user = users.find(u => u.id == tx.userId);
-        if (!user) {
-            return showMessage('User not found for this transaction.', 'error');
-        }
-
-        // Use the actual user balance from the state, which is kept updated by onSnapshot
-        let newBalance = Number(user.balance) || 0;
-        const txAmount = Number(tx.amount) || 0;
-        const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, tx.id);
-        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.id);
-
-
-        // Balance calculation
-        if (tx.type === 'deposit') {
-            newBalance += txAmount;
-        } else if (tx.type === 'withdrawal') {
-            if (txAmount > newBalance) {
-                // IMPORTANT: Update transaction status to declined if balance is insufficient
-                await updateDoc(txDocRef, { status: 'declined', processedAt: serverTimestamp() });
-                return showMessage('Cannot approve withdrawal: insufficient balance. Transaction declined.', 'error');
-            }
-            newBalance -= txAmount;
-        } else {
-             return showMessage(`Unknown transaction type: ${tx.type}`, 'error');
-        }
-
-        // 1. Update user balance
-        await updateDoc(userDocRef, { balance: parseFloat(newBalance.toFixed(2)) });
-
-        // 2. Update transaction status
-        await updateDoc(txDocRef, { 
-            status: 'approved',
-            processedAt: serverTimestamp() // Use serverTimestamp for accuracy
-        });
-
-        showMessage(`Transaction #${tx.id.substring(0, 8)} approved. New user balance: $${newBalance.toFixed(2)}.`, 'success');
-    } catch (err) {
-        showMessage(`Failed to approve transaction: ${err.message}`, 'error');
-        console.error("Firestore Transaction Error:", err);
-    }
-}
-
-// 4. Reject Transaction
-async function rejectTransaction(txId) {
-    try {
-        const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, txId);
-        await updateDoc(txDocRef, { 
-            status: 'rejected',
-            processedAt: serverTimestamp()
-        });
-        showMessage(`Transaction #${txId.substring(0, 8)} rejected.`, 'success');
-    } catch (err) {
-        showMessage(`Failed to reject transaction: ${err.message}`, 'error');
-        console.error("Firestore Transaction Error:", err);
-    }
-}
-
-// 5. Modal submit (Message/Billing)
-if (closeModalBtn && messageModal) {
-    closeModalBtn.addEventListener('click', () => {
-        messageModal.style.display = 'none';
-        modalStatus.textContent = ''; // Clear status on close
-    });
-}
-
-if (sendMessageBtn) {
-    sendMessageBtn.addEventListener('click', async () => {
-        if (!selectedUserId || !db) return;
-
-        const message = messageText.value.trim();
-        const billing = parseFloat(billingAmount.value);
-        const user = users.find(u => u.id === selectedUserId);
-
-        if (!message && (isNaN(billing) || billing <= 0)) {
-            modalStatus.textContent = 'Enter a message or a positive billing amount.';
-            modalStatus.style.color = 'red';
-            return;
-        }
-
-        modalStatus.textContent = 'Processing...';
-        modalStatus.style.color = 'black';
-
-        try {
-            let actionDescription = '';
-
-            // 1. Handle Billing/Balance Update (if applicable)
-            if (!isNaN(billing) && billing > 0) {
-                if (!user) throw new Error("Target user data missing for billing.");
-                
-                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, selectedUserId);
-                const newBalance = (Number(user.balance) || 0) - billing; // Billing subtracts
-                
-                // Update user balance
-                await updateDoc(userDocRef, {
-                    balance: parseFloat(newBalance.toFixed(2))
-                });
-
-                // Log the billing as a transaction for history
-                await addDoc(collection(db, PUBLIC_TRANSACTIONS_COLLECTION), {
-                    userId: selectedUserId,
-                    type: 'billing',
-                    amount: billing,
-                    status: 'completed',
-                    note: `Admin billed for: ${message.substring(0, 50) || 'Service charge'}`,
-                    createdAt: serverTimestamp(), // Use server timestamp
-                    processedAt: serverTimestamp(),
-                    username: user.username || user.email
-                });
-                actionDescription += `Billed $${billing.toFixed(2)}. `;
-            }
-            
-            // 2. Send Message (if applicable)
-            if (message) {
-                await addDoc(collection(db, PUBLIC_MESSAGES_COLLECTION), {
-                    userId: selectedUserId,
-                    sender: 'Admin',
-                    message: message,
-                    read: false,
-                    type: 'notification', // Changed from 'broadcast' to 'notification' for clarity
-                    timestamp: serverTimestamp() // Use server timestamp
-                });
-                actionDescription += 'Message sent.';
-            }
-
-            modalStatus.textContent = `✅ Action completed: ${actionDescription}`;
-            modalStatus.style.color = 'green';
-
-            // Clear inputs after success
-            messageText.value = '';
-            billingAmount.value = '';
-
-            setTimeout(() => {
-                messageModal.style.display = 'none';
-                modalStatus.textContent = '';
-            }, 1500);
-
-        } catch (error) {
-            modalStatus.textContent = '❌ Error: ' + error.message;
-            modalStatus.style.color = 'red';
-            console.error("Messaging/Billing Error:", error);
-        }
-    });
-}
-
-
-// === Event Listeners Setup ===
-
-function addTableEventListeners() {
-    // 1. Balance Update & Messaging Button Listeners
-    // Use delegation or robust removal/re-addition to handle onSnapshot re-renders
-    
-    // Using delegation on the table body is more efficient for constantly changing rows
-    if (usersTableBody) {
-        // Clear old event handlers to prevent duplication
-        usersTableBody.onmouseover = null; 
-        usersTableBody.onclick = null; 
-
-        usersTableBody.addEventListener('click', (e) => {
-            const updateBtn = e.target.closest('.update-btn');
-            const messageBtn = e.target.closest('.send-message-btn');
-
-            if (updateBtn) {
-                e.stopPropagation();
-                const userId = updateBtn.getAttribute('data-userid');
-                const input = document.getElementById(`balance-input-${userId}`);
-                const newBalance = parseFloat(input.value);
-
-                if (isNaN(newBalance) || newBalance < 0) {
-                    return showMessage('Enter a valid non-negative balance.', 'error');
-                }
-                updateUserBalance(userId, newBalance);
-            }
-
-            if (messageBtn) {
-                e.stopPropagation();
-                selectedUserId = messageBtn.getAttribute('data-userid');
-                const username = messageBtn.getAttribute('data-username');
-                
-                modalUserInfo.textContent = `To: ${username} (ID: ${selectedUserId.substring(0, 8)}...)`;
-                messageText.value = '';
-                billingAmount.value = '';
-                modalStatus.textContent = '';
-                if (messageModal) messageModal.style.display = 'flex';
-            }
-        });
-
-        // Add handler for Ban/Freeze/Delete actions
-        usersTableBody.removeEventListener('click', handleUserActionsClick);
-        usersTableBody.addEventListener('click', handleUserActionsClick);
-    }
-}
-
-function handleUserActionsClick(e) {
-    const btn = e.target.closest('.action-btn');
-    if (!btn) return;
-
-    const userId = btn.dataset.userId;
-    const action = btn.dataset.action;
-    const user = users.find(u => u.id == userId);
-    if (!user) return;
-    
-    const userName = user.username || user.email;
-
-    if (action === 'delete') {
-        showConfirmation(
-            'Confirm Permanent Deletion',
-            `Are you SURE you want to DELETE user **${userName}** (ID: ${userId.substring(0, 8)}...) and all their data? This is **permanent** and irreversible.`,
-            (confirmed) => {
-                if (confirmed) {
-                    handleUserAction(userId, action);
-                }
-            }
-        );
+async function handleUserAction(userId, action) {
+  const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
+  const user = users.find(u => u.id === userId);
+  if (!user) return showMessage("User not found locally", "error");
+  try {
+    if (action === "ban") {
+      await updateDoc(userDocRef, { isBanned: !user.isBanned });
+      showMessage(`${user.username || user.email} ban toggled`, "success");
+    } else if (action === "freeze") {
+      await updateDoc(userDocRef, { isFrozen: !user.isFrozen });
+      showMessage(`${user.username || user.email} freeze toggled`, "success");
+    } else if (action === "delete") {
+      await deleteDoc(userDocRef);
+      showMessage(`${user.username || user.email} deleted`, "success");
     } else {
-        handleUserAction(userId, action);
+      showMessage("Unknown action", "error");
     }
+  } catch (err) {
+    console.error("handleUserAction error:", err);
+    showMessage(`Failed: ${err.message}`, "error");
+  }
 }
 
+async function approveTransaction(tx) {
+  try {
+    const user = users.find(u => u.id === tx.userId);
+    if (!user) return showMessage("User not found for TX", "error");
 
-// 3. Transaction Approval/Rejection Listeners
-if (transactionsTableBody) {
-    transactionsTableBody.addEventListener('click', (e) => {
-        const txBtn = e.target.closest('.approve-btn, .reject-btn');
-        if (!txBtn) return;
+    const txAmount = Number(tx.amount) || 0;
+    let newBalance = Number(user.balance) || 0;
+    const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, tx.id);
+    const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.id);
 
-        const txId = txBtn.getAttribute('data-txid');
-        const action = txBtn.classList.contains('approve-btn') ? 'approve' : 'reject';
-        const tx = transactions.find(t => t.id == txId);
-        if (!tx) return;
-        
-        const txType = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
-        const userName = users.find(u => u.id == tx.userId)?.username || tx.userId.substring(0, 8);
-        
-        showConfirmation(
-            `${action.toUpperCase()} Transaction?`,
-            `Confirm ${action} for **${txType}** of $${Number(tx.amount).toFixed(2)} for user **${userName}**?`,
-            (confirmed) => {
-                if (confirmed) {
-                    if (action === 'approve') {
-                        approveTransaction(tx);
-                    } else {
-                        rejectTransaction(txId);
-                    }
-                }
-            }
-        );
+    if (tx.type === "deposit") {
+      newBalance += txAmount;
+    } else if (tx.type === "withdrawal") {
+      if (txAmount > newBalance) {
+        await updateDoc(txDocRef, { status: "rejected", processedAt: serverTimestamp() });
+        return showMessage("Insufficient balance — TX rejected", "error");
+      }
+      newBalance -= txAmount;
+    } else {
+      return showMessage("Unknown transaction type", "error");
+    }
+
+    // Update user balance then transaction
+    await updateDoc(userDocRef, { balance: parseFloat(newBalance.toFixed(2)) });
+    await updateDoc(txDocRef, { status: "approved", processedAt: serverTimestamp() });
+    showMessage("Transaction approved", "success");
+  } catch (err) {
+    console.error("approveTransaction error:", err);
+    showMessage(`Approve failed: ${err.message}`, "error");
+  }
+}
+
+async function rejectTransaction(txId) {
+  try {
+    const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, txId);
+    await updateDoc(txDocRef, { status: "rejected", processedAt: serverTimestamp() });
+    showMessage("Transaction rejected", "success");
+  } catch (err) {
+    console.error("rejectTransaction error:", err);
+    showMessage(`Reject failed: ${err.message}`, "error");
+  }
+}
+
+/* ===========================
+   Event wiring (delegated)
+   =========================== */
+function attachTableListeners() {
+  if (listenersAttached) return;
+  listenersAttached = true;
+
+  // Users table (delegated)
+  if (usersTableBody) {
+    usersTableBody.addEventListener("click", (e) => {
+      const updateBtn = e.target.closest(".update-btn");
+      const msgBtn = e.target.closest(".send-message-btn");
+      const actionBtn = e.target.closest(".action-btn");
+
+      if (updateBtn) {
+        const userId = updateBtn.dataset.userid;
+        const input = document.getElementById(`balance-input-${userId}`);
+        const val = parseFloat(input?.value);
+        if (isNaN(val) || val < 0) return showMessage("Enter valid non-negative balance", "error");
+        updateUserBalance(userId, val);
+      }
+
+      if (msgBtn) {
+        selectedUserId = msgBtn.dataset.userid;
+        const username = msgBtn.dataset.username || selectedUserId;
+        if (modalUserInfo) modalUserInfo.textContent = `To: ${username} (ID: ${selectedUserId.substring(0,8)}...)`;
+        if (messageText) messageText.value = "";
+        if (billingAmount) billingAmount.value = "";
+        if (modalStatus) modalStatus.textContent = "";
+        if (messageModal) messageModal.style.display = "flex";
+      }
+
+      if (actionBtn) {
+        const uid = actionBtn.dataset.userId;
+        const act = actionBtn.dataset.action;
+        if (act === "delete") {
+          showConfirmation("Confirm deletion", `Delete user <strong>${uid.substring(0,8)}...</strong>? This is permanent.`, (ok) => {
+            if (ok) handleUserAction(uid, act);
+          });
+        } else {
+          handleUserAction(uid, act);
+        }
+      }
     });
+  }
+
+  // Transactions table (delegated)
+  if (transactionsTableBody) {
+    transactionsTableBody.addEventListener("click", (e) => {
+      const approveBtn = e.target.closest(".approve-btn");
+      const rejectBtn = e.target.closest(".reject-btn");
+      if (approveBtn) {
+        const txId = approveBtn.dataset.txid;
+        const tx = transactions.find(t => t.id === txId);
+        if (!tx) return showMessage("Transaction not found locally", "error");
+        showConfirmation("Approve transaction", `Approve TX ${txId.substring(0,8)}...?`, (ok) => { if (ok) approveTransaction(tx); });
+      }
+      if (rejectBtn) {
+        const txId = rejectBtn.dataset.txid;
+        showConfirmation("Reject transaction", `Reject TX ${txId.substring(0,8)}...?`, (ok) => { if (ok) rejectTransaction(txId); });
+      }
+    });
+  }
+
+  // Modal buttons
+  if (closeModalBtn) closeModalBtn.addEventListener("click", () => { if (messageModal) messageModal.style.display = "none"; });
+  if (sendMessageBtn) sendMessageBtn.addEventListener("click", async () => {
+    if (!selectedUserId) return showMessage("No user selected", "error");
+    const msg = (messageText?.value || "").trim();
+    const billing = Number(billingAmount?.value || 0);
+
+    if (!msg && (!billing || billing <= 0)) {
+      if (modalStatus) { modalStatus.textContent = "Enter message or positive billing amount"; modalStatus.style.color = "red"; }
+      return;
+    }
+
+    if (modalStatus) { modalStatus.textContent = "Processing…"; modalStatus.style.color = "black"; }
+
+    try {
+      // optional billing: decrement user's balance and log a completed billing tx
+      if (!isNaN(billing) && billing > 0) {
+        const user = users.find(u => u.id === selectedUserId);
+        if (!user) throw new Error("Target user data missing");
+        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, selectedUserId);
+        const newBalance = (Number(user.balance) || 0) - billing;
+        await updateDoc(userDocRef, { balance: parseFloat(newBalance.toFixed(2)) });
+        await addDoc(collection(db, PUBLIC_TRANSACTIONS_COLLECTION), {
+          userId: selectedUserId,
+          type: "billing",
+          amount: billing,
+          status: "completed",
+          note: `Admin billed`,
+          createdAt: serverTimestamp(),
+          processedAt: serverTimestamp(),
+          username: user.username || user.email
+        });
+      }
+
+      if (msg) {
+        await addDoc(collection(db, PUBLIC_MESSAGES_COLLECTION), {
+          userId: selectedUserId,
+          sender: "Admin",
+          message: msg,
+          read: false,
+          type: "notification",
+          timestamp: serverTimestamp()
+        });
+      }
+
+      if (modalStatus) { modalStatus.textContent = "Action completed"; modalStatus.style.color = "green"; }
+      setTimeout(() => { if (messageModal) messageModal.style.display = "none"; if (modalStatus) modalStatus.textContent = ""; }, 900);
+    } catch (err) {
+      console.error("sendMessage error:", err);
+      if (modalStatus) { modalStatus.textContent = `Error: ${err.message}`; modalStatus.style.color = "red"; }
+    }
+  });
+
+  // Logout buttons
+  if (logoutBtn) logoutBtn.addEventListener("click", async (e) => { e.preventDefault(); await signOut(auth); });
+  if (dropdownLogout) dropdownLogout.addEventListener("click", async (e) => { e.preventDefault(); await signOut(auth); });
 }
 
+/* ===========================
+   Firestore listeners (real-time)
+   =========================== */
+let usersUnsub = null;
+let txUnsub = null;
+let users = [];
+let transactions = [];
 
-// === UI & Sidebar Logic (Left as is) ===
+function setupUsersListener() {
+  if (!db) return;
+  const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
+  if (usersUnsub) usersUnsub(); // unsubscribe previous if any
+  usersUnsub = onSnapshot(usersRef, snapshot => {
+    users = [];
+    snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
+    renderUsers();
+  }, err => {
+    console.error("users onSnapshot error:", err);
+    showMessage("Failed to load users", "error");
+  });
+}
 
-const handleLogout = async (e) => {
-    e.preventDefault();
-    try {
-        await signOut(auth);
-        // The auth listener handles redirection to LOGIN_PAGE
-    } catch (error) {
-        showMessage(`Logout failed: ${error.message}`, 'error');
-    }
-};
+function setupTransactionsListener() {
+  if (!db) return;
+  const txRef = collection(db, PUBLIC_TRANSACTIONS_COLLECTION);
+  const q = query(txRef, where("status", "==", "pending"));
+  if (txUnsub) txUnsub();
+  txUnsub = onSnapshot(q, snapshot => {
+    transactions = [];
+    snapshot.forEach(d => transactions.push({ id: d.id, ...d.data() }));
+    renderTransactions();
+  }, err => {
+    console.error("transactions onSnapshot error:", err);
+    showMessage("Failed to load transactions", "error");
+  });
+}
 
-if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-if (dropdownLogout) dropdownLogout.addEventListener('click', handleLogout);
+/* ===========================
+   Auth & Admin security check
+   =========================== */
+async function checkIfAdmin(user) {
+  if (!db || !user) return false;
+  try {
+    const adminDocRef = doc(db, "admins", user.uid);
+    const adminSnap = await getDoc(adminDocRef);
+    if (adminSnap.exists()) return true;
 
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userDocRef);
+    if (userSnap.exists() && userSnap.data().isAdmin === true) return true;
 
-// === CORE INITIALIZATION AND SECURITY CHECK ===
+    return false;
+  } catch (err) {
+    console.error("checkIfAdmin error:", err);
+    return false;
+  }
+}
 
 function setupAuthListener() {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Check if user is an admin via Firestore.
-            const adminDocRef = doc(db, ADMIN_CHECK_COLLECTION, user.uid);
-            
-            try {
-                const adminDoc = await getDoc(adminDocRef); 
-                
-                if (adminDoc.exists() && adminDoc.data().admin_status === true) {
-                    console.log("Admin check passed. Starting data listeners.");
-                    
-                    // START DATA LISTENERS
-                    setupUsersListener();
-                    setupTransactionsListener();
-
-                    // Optional: Update welcome message
-                    const adminNameEl = document.getElementById('admin-user-name');
-                    if (adminNameEl) {
-                        adminNameEl.textContent = `Welcome, Admin (${user.email})`;
-                    }
-                    
-                } else {
-                    console.warn("User is authenticated but not authorized as admin. Logging out.");
-                    await signOut(auth);
-                    window.location.href = `./${LOGIN_PAGE}`;
-                }
-            } catch (error) {
-                console.error("Error during Admin Check:", error);
-                await signOut(auth);
-                window.location.href = `./${LOGIN_PAGE}`;
-            }
-
-        } else {
-            // NO user is logged in, redirect immediately
-            console.log("No user logged in. Redirecting.");
-            window.location.href = `./${LOGIN_PAGE}`;
-        }
-    });
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const allowed = await checkIfAdmin(user);
+      if (!allowed) {
+        // not admin: sign out and redirect
+        try { await signOut(auth); } catch(e) { console.warn("signOut after failed admin check:", e); }
+        window.location.href = `./${LOGIN_PAGE}`;
+        return;
+      }
+      // admin: start listeners & UI
+      setupUsersListener();
+      setupTransactionsListener();
+      attachTableListeners();
+      // try update admin name display if exists
+      const adminNameEl = document.getElementById("admin-user-name");
+      if (adminNameEl) adminNameEl.textContent = `Welcome, Admin (${user.email})`;
+    } else {
+      // not logged in
+      window.location.href = `./${LOGIN_PAGE}`;
+    }
+  });
 }
 
-
+/* ===========================
+   INIT: initialize firebase, DOM refs, listeners
+   =========================== */
 async function init() {
-    // 1. Initialize Firebase App
-    const app = initializeApp(firebaseConfig);
-    
-    // 2. Initialize Service Variables (Auth and Firestore)
-    db = getFirestore(app);
-    auth = getAuth(app);
-    
-    // 3. Start the Admin Security Check
-    setupAuthListener();
+  await domReady();
+
+  // prevent duplicate initialization
+  if (getApps().length > 0) {
+    app = getApp();
+  } else {
+    app = initializeApp(firebaseConfig);
+  }
+  db = getFirestore(app);
+  auth = getAuth(app);
+
+  // Ensure UI modals exist, then cache DOM refs
+  injectModalsIfMissing();
+  cacheDomRefs();
+  ensureMessageContainer();
+  ensureConfirmationModal();
+
+  // Start auth + data listeners
+  setupAuthListener();
 }
 
-// 🛑 Start the application 🛑
-document.addEventListener('DOMContentLoaded', init);
+init();
