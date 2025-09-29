@@ -1,6 +1,9 @@
-// ./assets/js/admin.js (Updated for Firebase v12 modular SDK)
+// ./assets/js/admin.js
 
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { 
+  signInWithEmailAndPassword,
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof auth === 'undefined') {
@@ -12,6 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('adminEmail'); 
     const passwordInput = document.getElementById('adminPassword');
     const errorMsg = document.getElementById('adminLoginError');
+
+    // ✅ Watch for login state and redirect
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            console.log("✅ Authenticated as:", user.email);
+            // redirect only if already on login page
+            if (window.location.pathname.includes("admin")) {
+                window.location.href = "./dashboard.html";
+            }
+        }
+    });
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -27,15 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // ✅ Correct usage for modular SDK
                 await signInWithEmailAndPassword(auth, email, password);
-
-                console.log("Login successful. Redirecting to dashboard...");
-                window.location.href = './dashboard.html'; 
-
+                console.log("Login successful, waiting for redirect...");
+                // redirect will now happen in onAuthStateChanged
             } catch (error) {
                 console.error("Firebase Login Error:", error);
-
                 let message = 'Login failed. Invalid email or password.';
                 if (error.code === 'auth/invalid-email') {
                     message = 'Invalid email format.';
