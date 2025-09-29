@@ -11,61 +11,44 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
         
     <script type="module">
-        // Import the necessary Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        // NOTE: Keeping getAnalytics is optional
-        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-            authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
-            projectId: "cboefirebaseserver",
-            storageBucket: "cboefirebaseserver.firebasestorage.app",
-            messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-            measurementId: "G-FCZEERNC06"
-        };
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+    authDomain: "cboefirebaseserver.firebaseapp.com",
+    projectId: "cboefirebaseserver",
+    storageBucket: "cboefirebaseserver.firebasestorage.app",
+    messagingSenderId: "755491003217",
+    appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
+  };
 
-        // Initialize Firebase and Services
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        // const analytics = getAnalytics(app); // Optional
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-        // Make core services accessible to other script modules
-        window.firebaseApp = app;
-        window.db = db;
-        window.auth = auth;
+  // Handle auth state
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.replace("../login/login.html");
+    }
+  });
 
-        // 🛑 AUTHENTICATION REDIRECT CHECK (Crucial for user-facing pages) 🛑
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                // User is not signed in, redirect to login page
-                console.log("No user signed in. Redirecting to login.");
-                // NOTE: Assuming your login page is at '../login/login.html'
-                window.location.replace("../login/login.html"); 
-            } else {
-                // User is signed in, allow access
-                console.log(`User ${user.uid} is signed in.`);
-                // You can add a loading screen here and hide it now
-            }
-        });
+  // Make available to dashboard.js
+  window.firebaseApp = app;
+  window.auth = auth;
+  window.db = db;
 
-        // 🛑 LOGOUT HANDLER 🛑
-        window.handleLogout = async () => {
-            try {
-                await signOut(auth);
-                // The onAuthStateChanged listener above handles the redirection after sign out
-            } catch (error) {
-                console.error("Logout failed:", error);
-                alert("Logout failed. Please try again.");
-            }
-        };
-    </script>
+  // Logout function
+  window.handleLogout = async () => {
+    await signOut(auth);
+    window.location.replace("../login/login.html");
+  };
+</script>
     </head>
 
 <body class="light-mode">
