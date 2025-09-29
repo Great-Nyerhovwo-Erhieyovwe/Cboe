@@ -715,6 +715,24 @@ li span {
     backdrop-filter: blur(16px);
 }
 
+/* trade view css */
+
+  /* Hide widget by default */
+  .tradingview-widget-container.mobile-only {
+    display: none;
+  }
+
+  /* Show only on mobile */
+  @media (max-width: 768px) {
+    .tradingview-widget-container.mobile-only {
+      display: block;
+      max-width: 100%;
+    }
+    .tradingview-widget-container.mobile-only iframe {
+      width: 100% !important; /* override TradingView inline width */
+    }
+  }
+
 
 /* accout type homepage */
 
