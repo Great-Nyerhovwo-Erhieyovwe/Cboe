@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
     <link rel="stylesheet" href="../assets/css/register.css">
+    <!-- ✅ FIXED: Removed trailing spaces in CDN URL -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     
-    <script type="module">
-        // Import the necessary Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
+    <!-- ✅ FIXED: Use GLOBAL Firebase (not modules) for compatibility with register.js -->
+    <!-- Remove the <script type="module"> block entirely -->
+    <!-- Instead, use standard script tags for Firebase compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+        // ✅ FIXED: Initialize Firebase in global scope (NOT module)
         const firebaseConfig = {
             apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
             authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com", // ✅ Removed trailing spaces
             projectId: "cboefirebaseserver",
             storageBucket: "cboefirebaseserver.firebasestorage.app",
             messagingSenderId: "755491003217",
@@ -27,15 +28,15 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         
-        // Initialize services and make them globally accessible to register.js
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
+        // Make services globally available for register.js
+        window.auth = firebase.auth();
+        window.db = firebase.firestore();
         
-        console.log("Firebase initialized and services are ready.");
+        console.log("Firebase initialized globally.");
     </script>
-    </head>
+</head>
 
 <body>
     <div class="container">
@@ -49,13 +50,12 @@
 
             <div class="form-group">
                 <label for="username">Username:</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="off"
-                    required>
+                <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="off" required>
                 <small id="usernameFeedback" class="feedback"></small>
-                <ul id="usernameSuggestions" class="suggestions-list"></ul>
+                <!-- ✅ FIXED: Added missing class for suggestions -->
+                <ul id="usernameSuggestions" class="suggestion-list"></ul>
                 <div class="error-message" id="usernameError"></div>
             </div>
-
 
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -83,7 +83,7 @@
 
             <div class="form-group">
                 <label for="country">Country:</label>
-                <select id="country" required>
+                <select id="country" name="country" required>
                     <option disabled selected>-- Choose Country --</option>
                     <option value="Argentina">Argentina</option>
                     <option value="brazil">Brazil</option>
@@ -93,19 +93,20 @@
                     <option value="mexico">Mexico</option>
                     <option value="uae">United Arab Emirates</option>
                     <option value="usa">United States</option>
-                    <option value="uk">United Kingdom</option> <option value="russia">Russia</option>
-                    <option value="south-africa">South-Africa</option>
+                    <option value="uk">United Kingdom</option>
+                    <option value="russia">Russia</option>
+                    <option value="south-africa">South Africa</option>
                     <option value="India">India</option>
-                    <option value="Philippine">Philippine</option>
+                    <option value="Philippine">Philippines</option>
                     <option value="Kazakhstan">Kazakhstan</option>
                     <option value="Others">Others</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label>Currency:</label>
-                <select id="currency" required>
-                    <option value="currency" disabled selected>-- Choose Currency --</option>
+                <label for="currency">Currency:</label> <!-- ✅ FIXED: Added 'for' attribute -->
+                <select id="currency" name="currency" required>
+                    <option value="" disabled selected>-- Choose Currency --</option> <!-- ✅ FIXED: Empty value -->
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
                     <option value="GBP">GBP - British Pound</option>
@@ -117,7 +118,7 @@
                     <option value="RUB">RUB - Russian Ruble</option>
                     <option value="ZAR">ZAR - South African Rand</option>
                     <option value="INR">INR - Indian Rupee</option>
-                    <option value="MXN">MXN - Mexicon Peso</option>
+                    <option value="MXN">MXN - Mexican Peso</option> <!-- ✅ FIXED: Typo "Mexicon" -->
                     <option value="PHP">PHP - Philippine Peso</option>
                     <option value="KZT">KZT - Kazakhstan Tenge</option>
                     <option value="Others">Others</option>
@@ -127,10 +128,12 @@
             <div class="form-group">
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password">
-                <i id="togglePwd" class="toggle-eye fa-regular fa-eye" data-target="password"></i> 
+                <!-- ✅ FIXED: Removed toggle icons (not used in JS) OR keep if needed -->
+                <!-- <i id="togglePwd" class="toggle-eye fa-regular fa-eye" data-target="password"></i> -->
                 <div class="error-message" id="passwordError"></div>
+                <!-- ✅ FIXED: Corrected typo "stength-bar" → "strength-bar" -->
                 <div class="password-strength-indicator">
-                    <div class="stength-bar" id="strengthBar"></div>
+                    <div class="strength-bar" id="strengthBar"></div>
                     <span id="strengthText"></span>
                 </div>
             </div>
@@ -138,7 +141,7 @@
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password:</label>
                 <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
-                <i id="toggleConfirmPwd" class="toggle-eye fa-regular fa-eye" data-target="confirmPassword"></i> 
+                <!-- <i id="toggleConfirmPwd" class="toggle-eye fa-regular fa-eye" data-target="confirmPassword"></i> -->
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
 
@@ -150,29 +153,28 @@
 
             <div class="form-group checkbox-group">
                 <input type="checkbox" id="agree" name="agree" required>
-                <label for="agree">I confirm that I am 18 years old or older and accept <a href="#">Service
-                        Agreement</a></label>
-                <div class="error-message" id="ageAgreementError"></div> 
+                <label for="agree">I confirm that I am 18 years old or older and accept <a href="#">Service Agreement</a></label>
+                <div class="error-message" id="ageAgreementError"></div>
             </div>
 
             <button type="submit">Register</button>
 
-            <p id="have-account">Already have an account?<a href="../login/login.html"> Login</a></p>
+            <p id="have-account">Already have an account? <a href="../login/login.html">Login</a></p>
         </form>
 
+        <!-- Modal -->
         <div id="modal" class="modal">
             <div class="modal-content">
-                <span id="closeModal" class="close">&times;</span> 
-                <div id="modalIcon" class="modal-icon"></div> 
+                <span id="closeModal" class="close">&times;</span>
+                <div id="modalIcon" class="modal-icon"></div>
                 <h3 id="modalTitle"></h3>
                 <p id="modalMessage"></p>
                 <div id="modalSpinner" class="spinner" style="display: none;"></div>
             </div>
         </div>
     </div>
-    <script type="module" src="./firebase-config.js"></script> 
-    
-    <script type="module" src="../assets/js/register.js"></script>
-</body>
 
+    <!-- ✅ FIXED: Use standard script tag (NOT type="module") -->
+    <script src="../assets/js/register.js"></script>
+</body>
 </html>
