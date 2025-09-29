@@ -16,14 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('adminPassword');
     const errorMsg = document.getElementById('adminLoginError');
 
-    // ✅ Watch for login state
+    // ✅ Only redirect if we're on login page AND user is already signed in
     onAuthStateChanged(auth, (user) => {
         if (user) {
             console.log("✅ Logged in as:", user.email);
-            // Make sure dashboard.html exists relative to THIS file
-            window.location.replace("dashboard.html"); 
-        } else {
-            console.log("ℹ️ No user signed in.");
+            if (window.location.pathname.endsWith("admin.html")) {
+                window.location.replace("dashboard.html");
+            }
         }
     });
 
@@ -43,8 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 console.log("🔑 Attempting login with:", email);
                 await signInWithEmailAndPassword(auth, email, password);
-                console.log("✅ Login success — waiting for onAuthStateChanged...");
-                // redirect now handled by onAuthStateChanged
+                console.log("✅ Login success — redirect will happen in onAuthStateChanged");
             } catch (error) {
                 console.error("❌ Firebase Login Error:", error);
                 let message = 'Login failed. Invalid email or password.';
