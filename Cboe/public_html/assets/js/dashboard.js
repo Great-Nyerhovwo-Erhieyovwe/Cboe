@@ -1,4 +1,4 @@
-// dashboard.js - FIXED VERSION
+// dashboard.js - FIXED VERSION with robust wallet config handling
 // Requirements:
 //  - Make sure Firebase is initialized and exposes `window.db` (Firestore) and `window.auth` (Auth)
 //  - Load this file as a module and after Firebase initialization (or use defer and initialize firebase earlier)
@@ -74,16 +74,45 @@ const DOM = {}; // we'll populate inside DOMContentLoaded
 /////////////////////////////////////////
 // Firestore / wallet config functions //
 /////////////////////////////////////////
+
+// --- Utility: normalize a key for tolerant matching ---
+function normalizeKey(k) {
+  if (!k && k !== '') return '';
+  return String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+function findCoinKey(walletConfig, coinRequested) {
+  if (!walletConfig || typeof walletConfig !== 'object') return null;
+  if (coinRequested && walletConfig[coinRequested]) return coinRequested; // exact
+  const normReq = normalizeKey(coinRequested);
+  for (const key of Object.keys(walletConfig)) {
+    if (normalizeKey(key) === normReq) return key;
+  }
+  return Object.keys(walletConfig)[0] || null;
+}
+function findNetworkKey(networksObj, networkRequested) {
+  if (!networksObj || typeof networksObj !== 'object') return null;
+  if (networkRequested && networksObj[networkRequested]) return networkRequested;
+  const normReq = normalizeKey(networkRequested);
+  for (const key of Object.keys(networksObj)) {
+    if (normalizeKey(key) === normReq) return key;
+  }
+  return Object.keys(networksObj)[0] || null;
+}
+
+// Fetch wallet config from Firestore
 async function fetchWalletConfig() {
   if (!db) return;
   try {
     const docRef = doc(db, "config", "wallet");
     const docSnap = await getDoc(docRef);
     if (docSnap.exists && docSnap.exists()) {
-      WALLET_CONFIG = docSnap.data();
+      WALLET_CONFIG = docSnap.data() || {};
+      console.debug("Wallet config loaded:", WALLET_CONFIG);
       updateNetworkOptions();
     } else {
       WALLET_CONFIG = {};
+      console.warn("Wallet config not found.");
+      updateNetworkOptions();
     }
   } catch (error) {
     console.error("Wallet config error:", error);
@@ -93,25 +122,53 @@ async function fetchWalletConfig() {
 function updateNetworkOptions() {
   const coinTypeSelect = DOM.coinType;
   const networkTypeSelect = DOM.networkType;
-  if (!coinTypeSelect || !networkTypeSelect) return;
-
-  const selectedCoin = coinTypeSelect.value || Object.keys(WALLET_CONFIG)[0] || 'USDT';
-  coinTypeSelect.value = selectedCoin;
-  const networks = WALLET_CONFIG[selectedCoin] || {};
-
-  // clear and populate
-  networkTypeSelect.innerHTML = '';
-  Object.keys(networks).forEach(net => {
-    const option = document.createElement('option');
-    option.value = net;
-    option.textContent = net;
-    networkTypeSelect.appendChild(option);
-  });
-
-  // select first if none chosen
-  if (!networkTypeSelect.value && networkTypeSelect.options.length > 0) {
-    networkTypeSelect.value = networkTypeSelect.options[0].value;
+  const walletAddressDisplay = DOM.walletAddressDisplay;
+  const qrCodeImage = DOM.qrCodeImage;
+  if (!coinTypeSelect || !networkTypeSelect) {
+    console.error("updateNetworkOptions: missing coinType or networkType element");
+    return;
   }
+
+  networkTypeSelect.innerHTML = '';
+
+  const coinKeys = Object.keys(WALLET_CONFIG || {});
+  if (coinKeys.length === 0) {
+    coinTypeSelect.innerHTML = '<option value="">-- No coins configured --</option>';
+    if (walletAddressDisplay) walletAddressDisplay.textContent = 'No configuration';
+    if (qrCodeImage?.parentElement) qrCodeImage.parentElement.style.display = 'none';
+    return;
+  }
+
+  // rebuild coin options
+  const prevCoin = coinTypeSelect.value;
+  const matchedCoinKey = findCoinKey(WALLET_CONFIG, prevCoin) || coinKeys[0];
+  coinTypeSelect.innerHTML = '';
+  coinKeys.forEach(ck => {
+    const opt = document.createElement('option');
+    opt.value = ck;
+    opt.textContent = ck;
+    coinTypeSelect.appendChild(opt);
+  });
+  coinTypeSelect.value = matchedCoinKey;
+
+  const networksObj = WALLET_CONFIG[matchedCoinKey] || {};
+  const networkKeys = Object.keys(networksObj);
+  if (networkKeys.length === 0) {
+    networkTypeSelect.innerHTML = '<option value="">-- No networks --</option>';
+    if (walletAddressDisplay) walletAddressDisplay.textContent = 'Configuration not available.';
+    if (qrCodeImage?.parentElement) qrCodeImage.parentElement.style.display = 'none';
+    return;
+  }
+
+  const prevNetwork = networkTypeSelect.value;
+  const matchedNetworkKey = findNetworkKey(networksObj, prevNetwork) || networkKeys[0];
+  networkKeys.forEach(nk => {
+    const opt = document.createElement('option');
+    opt.value = nk;
+    opt.textContent = nk;
+    networkTypeSelect.appendChild(opt);
+  });
+  networkTypeSelect.value = matchedNetworkKey;
 
   updateDepositDisplay();
 }
@@ -121,12 +178,18 @@ function updateDepositDisplay() {
   const qrCodeImage = DOM.qrCodeImage;
   const coinTypeSelect = DOM.coinType;
   const networkTypeSelect = DOM.networkType;
+  if (!walletAddressDisplay || !qrCodeImage) {
+    console.error("updateDepositDisplay: missing DOM elements");
+    return;
+  }
 
-  if (!walletAddressDisplay || !qrCodeImage) return;
+  const selectedCoin = coinTypeSelect?.value || '';
+  const selectedNetwork = networkTypeSelect?.value || '';
+  const coinKey = findCoinKey(WALLET_CONFIG, selectedCoin);
+  const networkKey = coinKey ? findNetworkKey(WALLET_CONFIG[coinKey], selectedNetwork) : null;
+  const data = (coinKey && networkKey) ? (WALLET_CONFIG[coinKey]?.[networkKey]) : null;
 
-  const selectedCoin = (coinTypeSelect && coinTypeSelect.value) || 'USDT';
-  const selectedNetwork = (networkTypeSelect && networkTypeSelect.value) || 'TRC-20';
-  const data = WALLET_CONFIG[selectedCoin]?.[selectedNetwork];
+  console.debug("updateDepositDisplay:", { selectedCoin, coinKey, selectedNetwork, networkKey, data });
 
   if (data && data.address) {
     walletAddressDisplay.textContent = data.address;
