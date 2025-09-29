@@ -1,5 +1,5 @@
 // --- FIREBASE FIRESTORE REFACTOR ---
-// This script now relies on the global window.db and window.auth objects 
+// This script relies on the global window.db and window.auth objects 
 // set in the containing HTML file (dashboard.html).
 
 import { 
@@ -8,34 +8,86 @@ import {
     collection, 
     query, 
     where, 
-    orderBy, 
     limit, 
-    getDocs, 
-    addDoc 
+    addDoc,
+    onSnapshot // Used for real-time updates for balance and transactions
 } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
 // Global Firestore/Auth objects from the HTML initialization script
 const db = window.db; 
 const auth = window.auth;
 
+// ====================================================================
+// --- GLOBAL HELPER FUNCTIONS (Defined before use) ---
+// ====================================================================
+
+// --- 1. POPUP NOTIFICATION SETUP ---
+const popupContainer = document.createElement('div');
+popupContainer.id = 'popupContainer';
+popupContainer.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 300px;
+`;
+document.body.appendChild(popupContainer);
+
+function showPopup(message, isSuccess = true) {
+    const popup = document.createElement('div');
+    popup.textContent = message;
+    popup.style.cssText = `
+        background-color: ${isSuccess ? '#4CAF50' : '#f44336'};
+        color: white;
+        padding: 10px 20px;
+        margin-top: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+    `;
+
+    popupContainer.prepend(popup);
+
+    setTimeout(() => {
+        popup.style.opacity = '0';
+        setTimeout(() => {
+            popup.remove();
+        }, 500);
+    }, 4000);
+}
+
+function formatUSD(amount) {
+    return `$${Number(amount).toFixed(2)}`;
+}
+
+// --- 2. GLOBAL LOGOUT HANDLER (Ensures 'banned' check can execute) ---
+if (typeof window.handleLogout === 'undefined') {
+    window.handleLogout = async () => {
+        try {
+            if (auth) {
+                await auth.signOut();
+            }
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+        window.location.href = 'login.html'; 
+    };
+}
+
 
 // ====================================================================
-// --- GLOBAL INIT CHECK AND USER DATA (No more sessionStorage checks here) ---
+// --- DOM CONTENT LOADED START ---
 // ====================================================================
-
-// NOTE: We rely on the parent HTML's onAuthStateChanged listener to ensure a user is logged in.
-// window.currentUser is set in the HTML's Firebase script upon successful login.
-let user = window.currentUser || auth.currentUser; 
-let userId = user ? user.uid : null; 
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Re-check after DOM is loaded in case the Auth listener resolved later
-    user = window.currentUser || auth.currentUser;
-    userId = user ? user.uid : null;
-
-    if (!userId || !db) {
-        console.error("Firebase services or User ID not available. UI elements will not load.");
-        // The HTML script should have already redirected the user, but this guards the functions.
+    
+    // User is checked by the HTML's auth listener, so auth.currentUser is reliable here
+    const user = auth.currentUser;
+    const userId = user ? user.uid : null;
+    
+    if (!userId || !db || !auth) {
+        console.error("Firebase services or User ID not available. Redirect should have occurred.");
         return; 
     }
 
@@ -55,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileNameEl = document.getElementById('profileName');
     const balanceAmountEl = document.getElementById('balanceAmount');
     const roiEl = document.getElementById('roi');
-    const activeInvestmentEl = document.getElementById('initialInvestment'); // Corrected ID
+    const activeInvestmentEl = document.getElementById('initialInvestment'); 
     const activeDepositEl = document.getElementById('activeDeposit'); 
     const transactionList = document.getElementById('transactionList');
 
@@ -79,23 +131,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const qrCodeImage = document.getElementById('qrCodeImage');
     
     // --- State Variables ---
-    let userProfile = {}; // Store the Firestore user document here
+    let userProfile = {}; 
     
     // ====================================================================
-    // --- FIRESTORE WALLET CONFIG (Dynamic Data Fetch) ---
+    // --- FIRESTORE WALLET CONFIG (One-time fetch) ---
     // ====================================================================
 
     let WALLET_CONFIG = {};
     const WALLET_CONFIG_DOC = doc(db, "config", "wallet");
     
-    // Fetch and cache the admin-set wallet configuration
     async function fetchWalletConfig() {
         try {
             const docSnap = await getDoc(WALLET_CONFIG_DOC);
             if (docSnap.exists()) {
-                // The structure should be: { "USDT": { "TRC-20": { address: "...", qr_path: "..." }, ... } }
                 WALLET_CONFIG = docSnap.data();
-                updateNetworkOptions(); // Initialize the dropdowns
+                updateNetworkOptions(); 
             } else {
                 console.warn("Wallet configuration document 'config/wallet' not found.");
                 WALLET_CONFIG = {};
@@ -105,132 +155,68 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function updateNetworkOptions() {
-        if (!coinTypeSelect || !networkTypeSelect) return;
+    if (coinTypeSelect && networkTypeSelect && walletAddressDisplay && qrCodeImage) {
         
-        const selectedCoin = coinTypeSelect.value;
-        const networks = WALLET_CONFIG[selectedCoin];
-        
-        // Clear existing options
-        networkTypeSelect.innerHTML = ''; 
+        function updateNetworkOptions() {
+            const selectedCoin = coinTypeSelect.value;
+            const networks = WALLET_CONFIG[selectedCoin];
+            
+            networkTypeSelect.innerHTML = ''; 
 
-        // Add new options for the selected coin
-        if (networks) {
-            for (const network in networks) {
-                const option = document.createElement('option');
-                option.value = network;
-                option.textContent = network;
-                networkTypeSelect.appendChild(option);
+            if (networks) {
+                for (const network in networks) {
+                    const option = document.createElement('option');
+                    option.value = network;
+                    option.textContent = network;
+                    networkTypeSelect.appendChild(option);
+                }
+            }
+            updateDepositDisplay();
+        }
+
+        function updateDepositDisplay() {
+            const selectedCoin = coinTypeSelect.value;
+            const selectedNetwork = networkTypeSelect.value;
+
+            const data = WALLET_CONFIG[selectedCoin]?.[selectedNetwork];
+
+            if (data && data.address) {
+                walletAddressDisplay.textContent = data.address;
+                qrCodeImage.src = data.qr_path || '../assets/placeholder_qr.png'; 
+                qrCodeImage.parentElement.style.display = 'block';
+            } else {
+                walletAddressDisplay.textContent = 'Configuration not available.';
+                qrCodeImage.src = '';
+                qrCodeImage.parentElement.style.display = 'none';
             }
         }
-        updateDepositDisplay();
-    }
 
-    function updateDepositDisplay() {
-        if (!walletAddressDisplay || !qrCodeImage) return;
-
-        const selectedCoin = coinTypeSelect.value;
-        const selectedNetwork = networkTypeSelect.value;
-
-        const data = WALLET_CONFIG[selectedCoin]?.[selectedNetwork];
-
-        if (data && data.address) {
-            walletAddressDisplay.textContent = data.address;
-            // NOTE: Assuming qr_path contains the correct public image URL from Storage or elsewhere
-            qrCodeImage.src = data.qr_path || '../assets/IMG_3817.png'; 
-            qrCodeImage.parentElement.style.display = 'block';
-        } else {
-            walletAddressDisplay.textContent = 'Configuration not available.';
-            qrCodeImage.src = '';
-            qrCodeImage.parentElement.style.display = 'none';
-        }
-    }
-
-    // Add event listeners to the new selectors
-    if (coinTypeSelect && networkTypeSelect) {
         coinTypeSelect.addEventListener('change', updateNetworkOptions);
         networkTypeSelect.addEventListener('change', updateDepositDisplay);
     }
     
     // ====================================================================
-    // --- FIRESTORE DATA FUNCTIONS ---
+    // --- FIRESTORE DATA LISTENERS (Real-time Sync) ---
     // ====================================================================
-
-    function formatUSD(amount) {
-        return `$${Number(amount).toFixed(2)}`;
-    }
-
-    // PRIMARY DATA FETCH FUNCTION - SYNCS ALL METRICS
-    async function fetchUserData() {
-        try {
-            const userDocRef = doc(db, "users", userId);
-            const docSnap = await getDoc(userDocRef);
-
-            if (!docSnap.exists()) {
-                console.error('User document not found for ID:', userId);
-                // Consider logging out the user if their data record is missing
-                return;
-            }
-
-            const userData = docSnap.data();
-            userProfile = userData; // Update global state
-            
-            // 🛑 BAN CHECK (Immediate action) 🛑
-            if (userData.isBanned === true) {
-                alert('🚫 Account Banned: Access has been permanently revoked by the administrator.');
-                // Clear the Firebase session (handled by the HTML script) and redirect
-                window.handleLogout(); 
-                return; 
-            }
-
-            // Update UI elements
-            if (profileNameEl) {
-                const name = userData.username || user.email || 'User';
-                profileNameEl.textContent = `Welcome, ${name}`;
-            }
-
-            // Update all dashboard metrics
-            const balance = userData.balance || 0;
-            const roi = userData.roi || 0;
-            const activeInvestments = userData.activeTrades || 0; // Assuming activeTrades stores the value/count
-            const activeDepositsCount = userData.deposits || 0; // Assuming deposits stores the count
-
-            if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
-            if (roiEl) roiEl.textContent = `${formatUSD(roi)} (${(roi * 100 / (userData.initialDeposit || 1)).toFixed(2)}%)`;
-            if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
-            if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
-            
-        } catch (err) {
-            console.error('Error loading user data:', err);
-        }
-    }
 
     function renderTransactions(transactions) {
         if (!transactionList) return; 
 
         transactionList.innerHTML = ''; 
         
-        // Render up to 5 latest transactions (can be adjusted)
+        // Client-side sort by date (descending) 
+        transactions.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+
+        // Render only the latest 5 transactions
         transactions.slice(0, 5).forEach(tx => {
             const li = document.createElement('li');
-            
-            // Convert Firestore Timestamp or Date string to a readable format
-            let date;
-            if (tx.createdAt && tx.createdAt.toDate) {
-                date = tx.createdAt.toDate().toLocaleString();
-            } else if (tx.createdAt) {
-                date = new Date(tx.createdAt).toLocaleString();
-            } else {
-                date = new Date().toLocaleString();
-            }
+            let date = tx.createdAt.toDate().toLocaleString();
             
             li.textContent = `${date}: ${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${formatUSD(tx.amount)} — Status: ${tx.status}`;
             transactionList.prepend(li);
         });
     }
-    
-    // --- TRANSACTION FETCH AND POPUP LOGIC ---
-    // NOTE: This now uses Firestore collection querying.
+
     let notifiedTransactionIds = new Set();
     const NOTIFIED_KEY = `notifiedTransactions_${userId}`; 
     
@@ -243,20 +229,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function fetchTransactionsWithPopup() {
-        if (!transactionList) return; 
+    // Real-time listener for transactions
+    function listenToTransactions() {
+        if (!transactionList) return () => {}; 
 
-        try {
-            const transactionsCollection = collection(db, "transactions");
-            // Query: transactions WHERE userId == currentUser.uid, ordered by createdAt, limit to 20
-            const q = query(
-                transactionsCollection, 
-                where("userId", "==", userId), 
-                orderBy("createdAt", "desc"), 
-                limit(20) // Limit the fetch size
-            );
+        const transactionsCollection = collection(db, "transactions");
+        
+        // Query: transactions WHERE userId == currentUser.uid, limit to 20.
+        // NOTE: OrderBy is removed to prevent required index creation in Firestore.
+        const q = query(
+            transactionsCollection, 
+            where("userId", "==", userId), 
+            limit(20)
+        );
             
-            const querySnapshot = await getDocs(q);
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const transactions = [];
 
             querySnapshot.forEach(doc => {
@@ -277,17 +264,64 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            // Save the list of notified IDs back to local storage
             localStorage.setItem(
                 NOTIFIED_KEY,
                 JSON.stringify([...notifiedTransactionIds])
             );
 
             renderTransactions(transactions);
+        }, (error) => {
+            console.error("Error listening to transactions:", error);
+        });
+
+        return unsubscribe; 
+    }
+    
+    // PRIMARY DATA LISTEN FUNCTION - Real-time Sync for Metrics
+    function listenToUserData() {
+        // Ensure user data is fetched from the 'users' collection as per standard structure
+        const userDocRef = doc(db, "users", userId); 
+        
+        const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+            if (!docSnap.exists()) {
+                console.error('User document not found for ID:', userId);
+                return;
+            }
+
+            const userData = docSnap.data();
+            userProfile = userData; 
             
-        } catch (err) {
-            console.error('Error loading transactions:', err);
-        }
+            // 🛑 BAN CHECK (Immediate action) 🛑
+            if (userData.isBanned === true) {
+                console.warn('Account Banned. Redirecting...');
+                window.handleLogout(); 
+                return; 
+            }
+
+            // Update UI elements
+            if (profileNameEl) {
+                const name = userData.username || user.email || 'User';
+                profileNameEl.textContent = `Welcome, ${name}`;
+            }
+
+            // Update all dashboard metrics
+            const balance = userData.balance || 0;
+            const roi = userData.roi || 0;
+            // Use 'initialDeposit' or 'totalDeposits' as the base, safely defaulting to 1
+            const initialDeposit = userData.initialDeposit || userData.totalDeposits || 1; 
+            const activeInvestments = userData.activeTrades || 0; 
+            const activeDepositsCount = userData.deposits || 0; 
+
+            if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(balance);
+            if (roiEl) roiEl.textContent = `${formatUSD(roi)} (${(roi * 100 / initialDeposit).toFixed(2)}%)`;
+            if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(activeInvestments); 
+            if (activeDepositEl) activeDepositEl.textContent = `${activeDepositsCount} active deposits`;
+            
+        }, (error) => {
+            console.error("Error listening to user data:", error);
+        });
+        
+        return unsubscribe; 
     }
 
 
@@ -295,12 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- MODAL AND SUBMISSION LOGIC (Firestore Write) ---
     // ====================================================================
 
-    // --- Add funds (Firestore) ---
+    // --- Add funds (Deposit) ---
     if (confirmAddBtn && addAmountInput && statusAdd) {
         confirmAddBtn.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            // 🥶 TRANSACTION FREEZE CHECK 🥶
             if (userProfile.isFrozen === true) {
                 statusAdd.textContent = '❌ Transactions are currently frozen by the administrator.';
                 statusAdd.style.color = 'red';
@@ -314,19 +347,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
-            const coinType = coinTypeSelect.value;
-            const networkType = networkTypeSelect.value;
+            const coinType = coinTypeSelect ? coinTypeSelect.value : 'N/A';
+            const networkType = networkTypeSelect ? networkTypeSelect.value : 'N/A';
             
-            if (!coinType || !networkType) {
-                 statusAdd.textContent = " ! Please select a Coin Type and Network.";
-                 statusAdd.style.color = 'red';
-                 return;
+            if (!coinType || !networkType || coinType === 'N/A' || networkType === 'N/A') {
+                statusAdd.textContent = " ! Please select a Coin Type and Network.";
+                statusAdd.style.color = 'red';
+                return;
             }
 
             statusAdd.textContent = " ⏳ Submitting request...";
             statusAdd.style.color = 'black';
 
-            // Data structure for the new Firestore document
             const newTransaction = {
                 userId: userId,
                 type: 'deposit',
@@ -334,7 +366,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 coin: coinType, 
                 network: networkType, 
                 status: 'pending',
-                createdAt: new Date() // Firestore automatically converts this to Timestamp
+                createdAt: new Date(), 
+                username: userProfile.username || 'N/A'
             };
 
             try {
@@ -349,9 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     closeModal(addModal);
                 }, 1500);
 
-                // SYNCHRONIZATION CALLS
-                await fetchUserData(); // Update balance/deposit count
-                await fetchTransactionsWithPopup(); // Update transaction history and popups
+                showPopup(`Deposit of ${formatUSD(amount)} submitted for review.`, true);
 
             } catch (err) {
                 console.error("Firestore Deposit Error:", err);
@@ -361,12 +392,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Withdraw funds (Firestore) ---
+    // --- Withdraw funds ---
     if (confirmWithdrawBtn && withdrawAmountInput && statusWithdraw) {
         confirmWithdrawBtn.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            // 🥶 TRANSACTION FREEZE CHECK 🥶
             if (userProfile.isFrozen === true) {
                 statusWithdraw.textContent = '❌ Transactions are currently frozen by the administrator.';
                 statusWithdraw.style.color = 'red';
@@ -374,8 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const amount = parseFloat(withdrawAmountInput.value);
-            // Assuming wallet address input is the first text input in the withdrawModal
-            const walletInput = withdrawModal.querySelector('input[type="text"]');
+            // Assumes the wallet address input has the name="walletAddress" attribute
+            const walletInput = withdrawModal.querySelector('input[name="walletAddress"]'); 
             const walletAddress = walletInput ? walletInput.value.trim() : '';
 
             if (!walletAddress) {
@@ -388,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 statusWithdraw.style.color = 'red';
                 return;
             }
-            if (amount > (userProfile.balance || 0)) { // Check against current balance
+            if (amount > (userProfile.balance || 0)) { 
                 statusWithdraw.textContent = " ! Insufficient balance.";
                 statusWithdraw.style.color = 'red';
                 return;
@@ -403,7 +433,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 amount: amount,
                 walletAddress: walletAddress, 
                 status: 'pending',
-                createdAt: new Date()
+                createdAt: new Date(),
+                username: userProfile.username || 'N/A'
             };
 
             try {
@@ -413,15 +444,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 statusWithdraw.textContent = " ✅ Withdrawal request submitted!";
                 statusWithdraw.style.color = 'green';
                 withdrawAmountInput.value = '';
-                walletInput.value = ''; // Clear wallet input
+                walletInput.value = ''; 
 
                 setTimeout(() => {
                     closeModal(withdrawModal);
                 }, 1500);
-
-                // SYNCHRONIZATION CALLS
-                await fetchUserData(); 
-                await fetchTransactionsWithPopup(); 
+                
+                showPopup(`Withdrawal of ${formatUSD(amount)} submitted for review.`, true);
 
             } catch (err) {
                 console.error("Firestore Withdrawal Error:", err);
@@ -432,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ====================================================================
-    // --- HELPER FUNCTIONS (Left mostly unchanged as they are DOM-specific) ---
+    // --- HELPER FUNCTIONS (Modals/Status) ---
     // ====================================================================
     
     function openModal(modal) {
@@ -445,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (modal) {
             modal.style.display = 'none';
             clearStatus();
-            clearInputs();
+            clearInputs(modal);
         }
     }
 
@@ -454,50 +483,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (statusWithdraw) statusWithdraw.textContent = '';
     }
 
-    function clearInputs() {
+    function clearInputs(modal) {
         if (addAmountInput) addAmountInput.value = '';
         if (withdrawAmountInput) withdrawAmountInput.value = '';
-        if (withdrawModal) {
-            const walletInput = withdrawModal.querySelector('input[type="text"]');
+        
+        if (modal === withdrawModal) {
+            const walletInput = withdrawModal.querySelector('input[name="walletAddress"]');
             if (walletInput) walletInput.value = '';
         }
     }
     
-    // *** POPUP NOTIFICATION SETUP ***
-    const popupContainer = document.createElement('div');
-    popupContainer.id = 'popupContainer';
-    popupContainer.style.position = 'fixed';
-    popupContainer.style.bottom = '20px';
-    popupContainer.style.right = '20px';
-    popupContainer.style.zIndex = '10000';
-    document.body.appendChild(popupContainer);
-
-    function showPopup(message, isSuccess = true) {
-        const popup = document.createElement('div');
-        popup.textContent = message;
-        popup.style.backgroundColor = isSuccess ? '#4CAF50' : '#f44336';
-        popup.style.color = 'white';
-        popup.style.padding = '10px 20px';
-        popup.style.marginTop = '10px';
-        popup.style.borderRadius = '4px';
-        popup.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-        popup.style.opacity = '1';
-        popup.style.transition = 'opacity 0.5s ease-out';
-
-        popupContainer.appendChild(popup);
-
-        setTimeout(() => {
-            popup.style.opacity = '0';
-            setTimeout(() => {
-                popup.remove();
-            }, 500);
-        }, 4000);
-    }
-    
     // ====================================================================
-    // --- UI EVENT LISTENERS (Modals) ---
+    // --- UI EVENT LISTENERS (Modals & Theme/Sidebar) ---
     // ====================================================================
     
+    // Modal Listeners
     if (openAddBtn && addModal) {
         openAddBtn.addEventListener('click', () => {
             openModal(addModal);
@@ -526,11 +526,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ====================================================================
-    // --- GLOBAL UI COMPONENTS (Theme, Sidebar, Dropdown) ---
-    // ====================================================================
-    
-    // --- Theme toggle (Persistence) ---
+    // Theme toggle logic...
     if (themeToggleBtn && themeIcon) {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark-mode') {
@@ -554,7 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Sidebar toggle (Logic omitted for brevity, assuming existing code works) ---
+    // Sidebar toggle logic...
     if (sidebar && sidebarToggleBtn && mainContent && mobileOverlay && hamburgerIcon) {
         const mediaQuery = window.matchMedia("(max-width: 768px)");
 
@@ -586,7 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 mobileOverlay.classList.remove("visible");
             } 
             if (dashboardContainer) {
-                 dashboardContainer.classList.remove("sidebar-collapsed");
+                dashboardContainer.classList.remove("sidebar-collapsed");
             }
             hamburgerIcon.classList.remove("fa-times");
             hamburgerIcon.classList.add("fa-bars");
@@ -597,7 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
         mediaQuery.addEventListener("change", setInitialSidebarState); 
     }
 
-    // --- Profile dropdown ---
+    // Profile dropdown logic...
     if (profileDropdown && dropdownMenu) { 
         profileDropdown.addEventListener("click", (e) => {
             dropdownMenu.classList.toggle("hidden");
@@ -610,10 +606,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-
-    // --- Logout button logic (Replaced with global function call from HTML) ---
-    // The previous code is removed as it's now handled by the inline HTML script:
-    // <li><a href="javascript:void(0);" onclick="handleLogout();">...</a></li>
 
 
     // ====================================================================
@@ -628,19 +620,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const theme = isDarkMode ? "dark" : "light";
             
             if (window.TradingView && window.TradingView.widget) {
-                 // Already loaded
+                 // Widget is already loaded, skip
             } else {
-                // Remove existing scripts if you need to dynamically re-add/update the widget
                 tradingViewContainer.innerHTML = ''; 
                 
                 let script = document.createElement('script');
                 script.src = 'https://s3.tradingview.com/tv.js'; 
                 script.onload = function () {
-                    new window.TradingView.widget({ // Use window.TradingView for safety
+                    new window.TradingView.widget({
                         container_id: "tradingview_eurusd",
                         autosize: true,
                         symbol: "FX:EURUSD",
-                        width: "100%", // Use 100% width for better responsiveness
+                        width: "100%", 
                         height: 400,
                         theme: theme 
                     });
@@ -650,28 +641,18 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         loadTradingView();
-        
         window.addEventListener('themeChanged', loadTradingView);
     }
 
 
     // ====================================================================
-    // --- INITIALIZATION AND POLLING (Passive Sync) ---
+    // --- INITIALIZATION (Start Real-time Sync) ---
     // ====================================================================
 
-    // 1. Fetch the admin-set wallet configuration
+    // 1. Fetch the admin-set wallet configuration (one-time fetch)
     fetchWalletConfig(); 
     
-    // 2. Initial load fetches all user data and transactions
-    fetchUserData();
-    fetchTransactionsWithPopup(); 
-
-    // Polling for passive synchronization every 60 seconds (Using Firestore read, not API)
-    if (balanceAmountEl || transactionList) {
-        setInterval(() => {
-            fetchUserData();
-            fetchTransactionsWithPopup();
-        }, 60000);
-    }
-
+    // 2. Start real-time listeners for user data and transactions
+    const unsubscribeUser = listenToUserData();
+    const unsubscribeTransactions = listenToTransactions();
 });
