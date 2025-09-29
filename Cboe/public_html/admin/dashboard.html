@@ -1,64 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | Dashboard</title>
-    <link rel="stylesheet" href="./assets/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
-        integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | Dashboard</title>
+  <link rel="stylesheet" href="./assets/css/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoE7cC5XWf3Zx+7P1d5u1M6+Zef3zq0n+d2Q=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <script type="module">
-        // Import the necessary Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-            authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
-            projectId: "cboefirebaseserver",
-            storageBucket: "cboefirebaseserver.firebasestorage.app",
-            messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-            measurementId: "G-FCZEERNC06"
-        };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        
-        // Initialize services and make them globally accessible
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
+    const firebaseConfig = { 
+      apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+      authDomain: "cboefirebaseserver.firebaseapp.com",
+      projectId: "cboefirebaseserver",
+      storageBucket: "cboefirebaseserver.firebasestorage.app",
+      messagingSenderId: "755491003217",
+      appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+      measurementId: "G-FCZEERNC06"
+    };
 
-        // 🛑 Admin-specific Auth Check and Redirection 🛑
-        onAuthStateChanged(window.auth, async (user) => {
-            if (user) {
-                window.currentUser = user; // Make user object globally available
-                
-                // Check if user is an Admin in Firestore
-                const userDocRef = doc(window.db, "users", user.uid);
-                const docSnap = await getDoc(userDocRef);
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app);
+    window.db = getFirestore(app);
 
-                if (docSnap.exists() && docSnap.data().isAdmin === true) {
-                    console.log("Admin user authenticated and profile loaded.");
-                    // The rest of the dashboard setup will run in dashboard.js
-                    document.body.classList.remove('loading');
-                } else {
-                    console.warn("User is not an admin. Redirecting.");
-                    window.location.href = "../login/login.html"; // Redirect unauthorized users
-                }
-            } else {
-                window.currentUser = null;
-                console.log("No user signed in. Redirecting to login.");
-                window.location.href = "../login/login.html";
-            }
-        });
-    </script>
+    // ✅ Only allow admins
+    onAuthStateChanged(window.auth, async (user) => {
+      if (user) {
+        const adminDocRef = doc(window.db, "admins", user.uid);
+        const adminSnap = await getDoc(adminDocRef);
+
+        if (adminSnap.exists()) {
+          console.log("✅ Admin user authenticated");
+          document.body.classList.remove('loading');
+        } else {
+          console.warn("❌ Not an admin, redirecting...");
+          window.location.href = "./admin.html"; // adjust path
+        }
+      } else {
+        console.log("❌ No user signed in. Redirecting...");
+        window.location.href = "./admin.html";
+      }
+    });
+  </script>
     <style>
         .loading #dashboard-container { display: none; }
         .light-mode { background-color: #f4f7f6; }
@@ -165,11 +153,8 @@
     </div>
 
     <div id="mobile-overlay" class="mobile-overlay hidden"></div>
- <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js" type="module"></script>
-
-   <script type="module" src="../firebase-config.js"></script> 
-
-<script type="module" src="../assets/js/dashboard.js"></script>
+  <script type="module" src="../firebase-config.js"></script>
+  <script type="module" src="../assets/js/dashboard.js"></script>
 
 </body>
 </html>
