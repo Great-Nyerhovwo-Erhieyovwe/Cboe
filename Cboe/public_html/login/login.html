@@ -5,36 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cboe | Login</title>
     <link rel="stylesheet" href="../assets/css/login.css">
+    <!-- ✅ FIXED: Removed trailing spaces in CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <script type="module">
-        // Import the necessary Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
+    <!-- ✅ FIXED: Use GLOBAL Firebase SDK (NOT modules) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+        // Initialize Firebase globally
         const firebaseConfig = {
             apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
             authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
+            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com", // ✅ Removed trailing spaces
             projectId: "cboefirebaseserver",
             storageBucket: "cboefirebaseserver.firebasestorage.app",
             messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-            measurementId: "G-FCZEERNC06"
+            appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
         };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        
-        // Initialize services and make them globally accessible to login.js
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
-        
-        console.log("Firebase initialized and services are ready.");
+        firebase.initializeApp(firebaseConfig);
+        window.auth = firebase.auth();
+        window.db = firebase.firestore();
     </script>
-    </head>
+</head>
 <body>
     <div class="container">
         <h2>Log in your account</h2>
@@ -50,13 +43,12 @@
                 <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 <i id="togglePwd" class="toggle-eye fa-regular fa-eye"></i>
                 <div class="error-message" id="passwordError"></div>
-                </div>
+            </div>
 
             <div class="form-group remember-me-group">
                 <div class="remember-me">
                     <input type="checkbox" id="remember-me" name="remember-me">
                     <label for="remember-me">Remember me</label>
-                    <div class="error-message" id="rememberError"></div>
                 </div>
                 <div class="forget-password">
                     <a href="#" id="forgotPasswordLink">Forgot password?</a>
@@ -65,22 +57,21 @@
 
             <button type="submit" id="loginButton">Login</button>
 
-            <p id="no-account">Don't have an account?<a href="../register/register.html"> Register</a></p>
+            <p id="no-account">Don't have an account? <a href="../register/register.html">Register</a></p>
         </form>
 
         <div id="modal" class="modal">
             <div class="modal-content">
                 <span id="closeModal">&times;</span>
-                <div id="modalIcon" class="modal-icon" >✔</div>
+                <div id="modalIcon" class="modal-icon">✔</div>
                 <h3 id="modalTitle"></h3>
                 <p id="modalMessage"></p>
                 <div id="modalSpinner" class="spinner" style="display: none;"></div>
             </div>
         </div>
     </div>
-    
-   <!-- <script type="module" src="./firebase-config.js"></script> -->
 
-    <script type="module" src="../assets/js/login.js"></script>
+    <!-- ✅ FIXED: Load as global script (NOT module) -->
+    <script src="../assets/js/login.js"></script>
 </body>
 </html>
