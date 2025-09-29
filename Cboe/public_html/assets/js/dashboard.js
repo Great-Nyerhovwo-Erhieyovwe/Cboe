@@ -1,85 +1,47 @@
-// dashboard.js - COMPLETE + FIXED VERSION
-import { 
-  doc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
-  limit, 
+// dashboard.js - FIXED VERSION
+// Requirements:
+//  - Make sure Firebase is initialized and exposes `window.db` (Firestore) and `window.auth` (Auth)
+//  - Load this file as a module and after Firebase initialization (or use defer and initialize firebase earlier)
+
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  limit,
   addDoc,
-  onSnapshot 
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Ensure Firebase is initialized in HTML
-const db = window.db;
-const auth = window.auth;
-
-if (!db || !auth) {
-  console.error("Firebase not initialized. Check HTML script.");
-  alert("System error. Please refresh the page.");
-}
-
-// DOM Elements
-const profileNameEl = document.getElementById('profileName');
-const balanceAmountEl = document.getElementById('balanceAmount');
-const roiEl = document.getElementById('roi');
-const activeInvestmentEl = document.getElementById('initialInvestment');
-const activeDepositEl = document.getElementById('activeDeposit');
-const transactionList = document.getElementById('transactionList');
-
-// Modal elements
-const addModal = document.getElementById('addModal');
-const withdrawModal = document.getElementById('withdrawModal');
-const openAddBtn = document.getElementById('openAddFunds');
-const openWithdrawBtn = document.getElementById('openWithdrawFunds');
-const closeButtons = document.querySelectorAll('.close-btn');
-const confirmAddBtn = document.getElementById('confirmAdd');
-const confirmWithdrawBtn = document.getElementById('confirmWithdraw');
-const addAmountInput = document.getElementById('addAmount');
-const withdrawAmountInput = document.getElementById('withdrawAmount');
-const statusAdd = document.getElementById('statusAdd');
-const statusWithdraw = document.getElementById('statusWithdraw');
-
-// Wallet config elements
-const coinTypeSelect = document.getElementById('coinType');
-const networkTypeSelect = document.getElementById('networkType');
-const walletAddressDisplay = document.getElementById('walletAddressDisplay');
-const qrCodeImage = document.getElementById('qrCodeImage');
-
-// UI Elements
-const sidebar = document.getElementById("sidebar");
-const sidebarToggleBtn = document.getElementById("sidebar-toggle");
-const hamburgerIcon = document.querySelector("#sidebar-toggle i");
-const mainContent = document.getElementById("main-content");
-const mobileOverlay = document.getElementById("mobile-overlay");
-const themeToggleBtn = document.getElementById("theme-toggle");
-const themeIcon = document.querySelector("#theme-toggle i");
-const profileDropdown = document.getElementById("profile-dropdown");
-const dropdownMenu = profileDropdown ? profileDropdown.querySelector(".dropdown-menu") : null;
-const dashboardContainer = document.getElementById("dashboard-container");
-
-// Popup container
-const popupContainer = document.createElement('div');
-popupContainer.id = 'popupContainer';
-popupContainer.style.cssText = `
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 10000;
-  max-width: 300px;
-`;
-document.body.appendChild(popupContainer);
-
+//////////////////////
+// Helper utilities //
+//////////////////////
 function showPopup(message, isSuccess = true) {
+  if (!document.body) return;
+  let popupContainer = document.getElementById('popupContainer');
+  if (!popupContainer) {
+    popupContainer = document.createElement('div');
+    popupContainer.id = 'popupContainer';
+    popupContainer.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 10000;
+      max-width: 320px;
+    `;
+    document.body.appendChild(popupContainer);
+  }
+
   const popup = document.createElement('div');
   popup.textContent = message;
   popup.style.cssText = `
     background-color: ${isSuccess ? '#4CAF50' : '#f44336'};
     color: white;
-    padding: 10px 20px;
+    padding: 10px 16px;
     margin-top: 10px;
-    border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     opacity: 1;
     transition: opacity 0.5s ease-out;
   `;
@@ -87,21 +49,41 @@ function showPopup(message, isSuccess = true) {
   setTimeout(() => {
     popup.style.opacity = '0';
     setTimeout(() => popup.remove(), 500);
-  }, 4000);
+  }, 3600);
 }
 
 function formatUSD(amount) {
-  return `$${Number(amount).toFixed(2)}`;
+  return `$${Number(amount || 0).toFixed(2)}`;
 }
 
-// Wallet config
+//////////////////////
+// Application state //
+//////////////////////
+let db = null;
+let auth = null;
+let userProfile = {};
+let currentUserId = null;
+let notifiedTransactionIds = new Set();
 let WALLET_CONFIG = {};
+
+///////////////////////////
+// DOM references holder //
+///////////////////////////
+const DOM = {}; // we'll populate inside DOMContentLoaded
+
+/////////////////////////////////////////
+// Firestore / wallet config functions //
+/////////////////////////////////////////
 async function fetchWalletConfig() {
+  if (!db) return;
   try {
-    const docSnap = await getDoc(doc(db, "config", "wallet"));
-    if (docSnap.exists()) {
+    const docRef = doc(db, "config", "wallet");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists && docSnap.exists()) {
       WALLET_CONFIG = docSnap.data();
       updateNetworkOptions();
+    } else {
+      WALLET_CONFIG = {};
     }
   } catch (error) {
     console.error("Wallet config error:", error);
@@ -109,302 +91,277 @@ async function fetchWalletConfig() {
 }
 
 function updateNetworkOptions() {
+  const coinTypeSelect = DOM.coinType;
+  const networkTypeSelect = DOM.networkType;
   if (!coinTypeSelect || !networkTypeSelect) return;
-  const selectedCoin = coinTypeSelect.value;
-  const networks = WALLET_CONFIG[selectedCoin];
+
+  const selectedCoin = coinTypeSelect.value || Object.keys(WALLET_CONFIG)[0] || 'USDT';
+  coinTypeSelect.value = selectedCoin;
+  const networks = WALLET_CONFIG[selectedCoin] || {};
+
+  // clear and populate
   networkTypeSelect.innerHTML = '';
-  if (networks) {
-    for (const network in networks) {
-      const option = document.createElement('option');
-      option.value = network;
-      option.textContent = network;
-      networkTypeSelect.appendChild(option);
-    }
+  Object.keys(networks).forEach(net => {
+    const option = document.createElement('option');
+    option.value = net;
+    option.textContent = net;
+    networkTypeSelect.appendChild(option);
+  });
+
+  // select first if none chosen
+  if (!networkTypeSelect.value && networkTypeSelect.options.length > 0) {
+    networkTypeSelect.value = networkTypeSelect.options[0].value;
   }
+
   updateDepositDisplay();
 }
 
 function updateDepositDisplay() {
+  const walletAddressDisplay = DOM.walletAddressDisplay;
+  const qrCodeImage = DOM.qrCodeImage;
+  const coinTypeSelect = DOM.coinType;
+  const networkTypeSelect = DOM.networkType;
+
   if (!walletAddressDisplay || !qrCodeImage) return;
-  const selectedCoin = coinTypeSelect?.value || 'USDT';
-  const selectedNetwork = networkTypeSelect?.value || 'TRC-20';
+
+  const selectedCoin = (coinTypeSelect && coinTypeSelect.value) || 'USDT';
+  const selectedNetwork = (networkTypeSelect && networkTypeSelect.value) || 'TRC-20';
   const data = WALLET_CONFIG[selectedCoin]?.[selectedNetwork];
-  if (data?.address) {
+
+  if (data && data.address) {
     walletAddressDisplay.textContent = data.address;
-    qrCodeImage.src = data.qr_path || '../assets/placeholder_qr.png';
-    qrCodeImage.parentElement.style.display = 'block';
+    if (data.qr_path) {
+      qrCodeImage.src = data.qr_path;
+      if (qrCodeImage.parentElement) qrCodeImage.parentElement.style.display = '';
+    } else if (qrCodeImage.parentElement) {
+      qrCodeImage.parentElement.style.display = 'none';
+    }
   } else {
     walletAddressDisplay.textContent = 'Configuration not available.';
-    qrCodeImage.parentElement.style.display = 'none';
+    if (qrCodeImage.parentElement) qrCodeImage.parentElement.style.display = 'none';
   }
 }
 
-// Real-time user data
-let userProfile = {};
-function listenToUserData() {
-  const user = auth.currentUser;
-  if (!user) return () => {};
-  
-  const userDocRef = doc(db, "users", user.uid);
+///////////////////////////////
+// Real-time Firestore - user //
+///////////////////////////////
+function startUserListener(uid) {
+  if (!db || !uid) return () => {};
+  const userDocRef = doc(db, "users", uid);
   return onSnapshot(userDocRef, (docSnap) => {
     if (!docSnap.exists()) {
       console.error('User document missing');
       return;
     }
+    userProfile = docSnap.data() || {};
 
-    userProfile = docSnap.data();
-    
     // Ban check
     if (userProfile.isBanned === true) {
       window.handleLogout?.();
       return;
     }
 
-    // ✅ FIXED: Profile name with fallback to email
-    if (profileNameEl) {
-      const displayName = userProfile.username || user.email || 'User';
-      profileNameEl.textContent = `Welcome, ${displayName}`;
+    // Update UI safely
+    if (DOM.profileName) {
+      const displayName = userProfile.username || (auth?.currentUser?.email) || 'User';
+      DOM.profileName.textContent = `Welcome, ${displayName}`;
     }
-    
-    if (balanceAmountEl) balanceAmountEl.textContent = formatUSD(userProfile.balance || 0);
-    if (roiEl) roiEl.textContent = formatUSD(userProfile.roi || 0);
-    if (activeInvestmentEl) activeInvestmentEl.textContent = formatUSD(userProfile.activeTrades || 0);
-    if (activeDepositEl) activeDepositEl.textContent = `${userProfile.deposits || 0} active deposits`;
-    
+    if (DOM.balanceAmount) DOM.balanceAmount.textContent = formatUSD(userProfile.balance);
+    if (DOM.roi) DOM.roi.textContent = formatUSD(userProfile.roi);
+    if (DOM.initialInvestment) DOM.initialInvestment.textContent = formatUSD(userProfile.activeTrades);
+    if (DOM.activeDeposit) DOM.activeDeposit.textContent = `${userProfile.deposits || 0} active deposits`;
   }, (error) => {
     console.error("User data error:", error);
   });
 }
 
-// Real-time transactions
-let notifiedTransactionIds = new Set();
-const user = auth.currentUser;
-const userId = user ? user.uid : null; // ✅ Get userId safely
-
-if (userId) {
-  const stored = localStorage.getItem(`notifiedTransactions_${userId}`);
-  if (stored) {
-    try { notifiedTransactionIds = new Set(JSON.parse(stored)); }
-    catch (e) { console.error("Notified TX parse error:", e); }
+/////////////////////////////////////
+// Real-time Firestore - transactions
+/////////////////////////////////////
+function startTransactionsListener(uid) {
+  if (!db || !uid || !DOM.transactionList) return () => {};
+  // restore notified IDs from localStorage
+  try {
+    const stored = localStorage.getItem(`notifiedTransactions_${uid}`);
+    if (stored) notifiedTransactionIds = new Set(JSON.parse(stored));
+  } catch (e) {
+    console.error("Notified TX parse error:", e);
   }
-}
 
-function listenToTransactions() {
-  if (!userId || !transactionList) return () => {};
-  
   const q = query(
     collection(db, "transactions"),
-    where("userId", "==", userId),
+    where("userId", "==", uid),
     limit(20)
   );
-  
+
   return onSnapshot(q, (querySnapshot) => {
     const transactions = [];
-    querySnapshot.forEach(doc => {
-      const tx = { id: doc.id, ...doc.data() };
-      transactions.push(tx);
+    querySnapshot.forEach(d => {
+      transactions.push({ id: d.id, ...(d.data() || {}) });
+    });
 
+    // notify approved/declined txs not yet seen
+    transactions.forEach(tx => {
       if (
         (tx.status === 'approved' || tx.status === 'declined') &&
         !notifiedTransactionIds.has(tx.id)
       ) {
-        const action = tx.type.charAt(0).toUpperCase() + tx.type.slice(1);
+        const action = (tx.type || '').charAt(0).toUpperCase() + (tx.type || '').slice(1);
         const isSuccess = tx.status === 'approved';
         showPopup(`${action} of ${formatUSD(tx.amount)} was ${isSuccess ? 'approved ✅' : 'declined ❌'}`, isSuccess);
         notifiedTransactionIds.add(tx.id);
-        localStorage.setItem(`notifiedTransactions_${userId}`, JSON.stringify([...notifiedTransactionIds]));
+        localStorage.setItem(`notifiedTransactions_${uid}`, JSON.stringify([...notifiedTransactionIds]));
       }
     });
-    
-    transactionList.innerHTML = '';
+
+    // render latest 5 sorted by createdAt (best-effort)
+    DOM.transactionList.innerHTML = '';
     transactions
       .sort((a, b) => {
-        const aTime = a.createdAt?.toDate?.() ? a.createdAt.toDate().getTime() : 0;
-        const bTime = b.createdAt?.toDate?.() ? b.createdAt.toDate().getTime() : 0;
+        const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
         return bTime - aTime;
       })
       .slice(0, 5)
       .forEach(tx => {
         const li = document.createElement('li');
-        const date = tx.createdAt?.toDate?.() ? tx.createdAt.toDate().toLocaleString() : 'N/A';
-        li.textContent = `${date}: ${tx.type} of ${formatUSD(tx.amount)} — Status: ${tx.status}`;
-        transactionList.appendChild(li);
+        const date = tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleString() : (tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'N/A');
+        li.textContent = `${date}: ${tx.type} of ${formatUSD(tx.amount)} — Status: ${tx.status || 'N/A'}`;
+        DOM.transactionList.appendChild(li);
       });
-      
   }, (error) => {
     console.error("Transactions error:", error);
   });
 }
 
-// Modal functions
+/////////////////
+// Modal logic //
+/////////////////
 function openModal(modal) {
-  if (modal) modal.style.display = 'flex';
+  if (!modal) return;
+  modal.style.display = 'flex';
 }
 
 function closeModal(modal) {
-  if (modal) {
-    modal.style.display = 'none';
-    clearStatus();
-    clearInputs(modal);
-  }
+  if (!modal) return;
+  modal.style.display = 'none';
+  clearStatus();
+  clearInputs(modal);
 }
 
 function clearStatus() {
-  if (statusAdd) statusAdd.textContent = '';
-  if (statusWithdraw) statusWithdraw.textContent = '';
+  if (DOM.statusAdd) DOM.statusAdd.textContent = '';
+  if (DOM.statusWithdraw) DOM.statusWithdraw.textContent = '';
 }
 
 function clearInputs(modal) {
-  if (addAmountInput) addAmountInput.value = '';
-  if (withdrawAmountInput) withdrawAmountInput.value = '';
-  if (modal === withdrawModal) {
-    const walletInput = withdrawModal.querySelector('input[type="text"]');
+  if (DOM.addAmount) DOM.addAmount.value = '';
+  if (DOM.withdrawAmount) DOM.withdrawAmount.value = '';
+  if (modal === DOM.withdrawModal) {
+    const walletInput = DOM.withdrawModal.querySelector('input[type="text"]');
     if (walletInput) walletInput.value = '';
   }
 }
 
-// ✅ FIXED: Deposit handler with proper userId
-if (confirmAddBtn) {
-  confirmAddBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    
-    // ✅ ALWAYS get user from auth
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      alert("Session expired. Please log in again.");
-      return;
-    }
-
-    if (userProfile.isFrozen) {
-      statusAdd.textContent = '❌ Transactions are frozen by admin.';
-      statusAdd.style.color = 'red';
-      return;
-    }
-
-    const amount = parseFloat(addAmountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-      statusAdd.textContent = " ! Enter valid amount.";
-      statusAdd.style.color = 'red';
-      return;
-    }
-
-    statusAdd.textContent = " ⏳ Submitting...";
-    statusAdd.style.color = 'black';
-
-    try {
-      // ✅ CORRECT FIELD NAME: userId (not userld)
-      await addDoc(collection(db, "transactions"), {
-        userId: currentUser.uid, // ✅ Guaranteed valid
-        type: 'deposit',
-        amount: amount,
-        status: 'pending',
-        createdAt: new Date()
-      });
-
-      statusAdd.textContent = " ✅ Request submitted!";
-      statusAdd.style.color = 'green';
-      setTimeout(() => closeModal(addModal), 1500);
-      showPopup(`Deposit of ${formatUSD(amount)} submitted.`, true);
-
-    } catch (err) {
-      console.error("Deposit error:", err);
-      statusAdd.textContent = '❌ ' + (err.message || 'Submission failed');
-      statusAdd.style.color = 'red';
-    }
-  });
-}
-
-// ✅ FIXED: Withdraw handler with proper userId
-if (confirmWithdrawBtn) {
-  confirmWithdrawBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      alert("Session expired. Please log in again.");
-      return;
-    }
-
-    if (userProfile.isFrozen) {
-      statusWithdraw.textContent = '❌ Transactions are frozen by admin.';
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-
-    const amount = parseFloat(withdrawAmountInput.value);
-    const walletInput = withdrawModal.querySelector('input[type="text"]');
-    const walletAddress = walletInput?.value.trim() || '';
-
-    if (!walletAddress) {
-      statusWithdraw.textContent = ' ! Enter wallet address';
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      statusWithdraw.textContent = " ! Enter valid amount.";
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-    if (amount > (userProfile.balance || 0)) {
-      statusWithdraw.textContent = " ! Insufficient balance.";
-      statusWithdraw.style.color = 'red';
-      return;
-    }
-
-    statusWithdraw.textContent = " ⏳ Submitting...";
-    statusWithdraw.style.color = 'black';
-
-    try {
-      await addDoc(collection(db, "transactions"), {
-        userId: currentUser.uid, // ✅ CORRECT
-        type: 'withdrawal',
-        amount: amount,
-        walletAddress: walletAddress,
-        status: 'pending',
-        createdAt: new Date()
-      });
-
-      statusWithdraw.textContent = " ✅ Request submitted!";
-      statusWithdraw.style.color = 'green';
-      setTimeout(() => closeModal(withdrawModal), 1500);
-      showPopup(`Withdrawal of ${formatUSD(amount)} submitted.`, true);
-
-    } catch (err) {
-      console.error("Withdraw error:", err);
-      statusWithdraw.textContent = '❌ ' + (err.message || 'Submission failed');
-      statusWithdraw.style.color = 'red';
-    }
-  });
-}
-
-// Modal event listeners
-if (openAddBtn && addModal) {
-  openAddBtn.addEventListener('click', () => {
-    openModal(addModal);
-    updateDepositDisplay();
-  });
-}
-if (openWithdrawBtn && withdrawModal) {
-  openWithdrawBtn.addEventListener('click', () => openModal(withdrawModal));
-}
-closeButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const modalId = btn.getAttribute('data-modal');
-    const modal = document.getElementById(modalId);
-    closeModal(modal);
-  });
-});
-[addModal, withdrawModal].forEach(modal => {
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal(modal);
-    });
+/////////////////////////
+// Deposit / Withdraw //
+/////////////////////////
+async function handleDepositSubmit(e) {
+  e?.preventDefault?.();
+  if (!auth) return alert("Auth not ready");
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Session expired. Please log in again.");
+    return;
   }
-});
 
-// ====================================================================
-// === TRADINGVIEW WIDGET (WITH THEME SUPPORT) ===
-// ====================================================================
+  if (userProfile.isFrozen) {
+    if (DOM.statusAdd) {
+      DOM.statusAdd.textContent = '❌ Transactions are frozen by admin.';
+      DOM.statusAdd.style.color = 'red';
+    }
+    return;
+  }
+
+  const amount = parseFloat(DOM.addAmount.value);
+  if (isNaN(amount) || amount <= 0) {
+    if (DOM.statusAdd) { DOM.statusAdd.textContent = " ! Enter valid amount."; DOM.statusAdd.style.color = 'red'; }
+    return;
+  }
+
+  if (DOM.statusAdd) { DOM.statusAdd.textContent = " ⏳ Submitting..."; DOM.statusAdd.style.color = 'black'; }
+
+  try {
+    await addDoc(collection(db, "transactions"), {
+      userId: currentUser.uid,
+      type: 'deposit',
+      amount: amount,
+      status: 'pending',
+      createdAt: new Date()
+    });
+    if (DOM.statusAdd) { DOM.statusAdd.textContent = " ✅ Request submitted!"; DOM.statusAdd.style.color = 'green'; }
+    setTimeout(() => closeModal(DOM.addModal), 1200);
+    showPopup(`Deposit of ${formatUSD(amount)} submitted.`, true);
+  } catch (err) {
+    console.error("Deposit error:", err);
+    if (DOM.statusAdd) { DOM.statusAdd.textContent = '❌ ' + (err.message || 'Submission failed'); DOM.statusAdd.style.color = 'red'; }
+  }
+}
+
+async function handleWithdrawSubmit(e) {
+  e?.preventDefault?.();
+  if (!auth) return alert("Auth not ready");
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Session expired. Please log in again.");
+    return;
+  }
+
+  if (userProfile.isFrozen) {
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = '❌ Transactions are frozen by admin.'; DOM.statusWithdraw.style.color = 'red'; }
+    return;
+  }
+
+  const amount = parseFloat(DOM.withdrawAmount.value);
+  const walletInput = DOM.withdrawModal.querySelector('input[type="text"]');
+  const walletAddress = walletInput?.value.trim() || '';
+
+  if (!walletAddress) {
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = ' ! Enter wallet address'; DOM.statusWithdraw.style.color = 'red'; }
+    return;
+  }
+  if (isNaN(amount) || amount <= 0) {
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ! Enter valid amount."; DOM.statusWithdraw.style.color = 'red'; }
+    return;
+  }
+  if (amount > (userProfile.balance || 0)) {
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ! Insufficient balance."; DOM.statusWithdraw.style.color = 'red'; }
+    return;
+  }
+
+  if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ⏳ Submitting..."; DOM.statusWithdraw.style.color = 'black'; }
+
+  try {
+    await addDoc(collection(db, "transactions"), {
+      userId: currentUser.uid,
+      type: 'withdrawal',
+      amount: amount,
+      walletAddress: walletAddress,
+      status: 'pending',
+      createdAt: new Date()
+    });
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ✅ Request submitted!"; DOM.statusWithdraw.style.color = 'green'; }
+    setTimeout(() => closeModal(DOM.withdrawModal), 1200);
+    showPopup(`Withdrawal of ${formatUSD(amount)} submitted.`, true);
+  } catch (err) {
+    console.error("Withdraw error:", err);
+    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = '❌ ' + (err.message || 'Submission failed'); DOM.statusWithdraw.style.color = 'red'; }
+  }
+}
+
+//////////////////////
+// TradingView init //
+//////////////////////
 function initTradingView() {
   const container = document.getElementById("tradingview_eurusd");
   if (!container) return;
@@ -414,49 +371,81 @@ function initTradingView() {
 
   container.innerHTML = '';
 
-  let script = document.createElement('script');
-  script.src = 'https://s3.tradingview.com/tv.js';
-  script.onload = () => {
+  // remove any previous script from head with this src to avoid duplicates (best-effort)
+  const existing = Array.from(document.querySelectorAll('script[src]')).find(s => s.src && s.src.includes('s3.tradingview.com/tv.js'));
+  if (!existing) {
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js';
+    script.onload = () => {
+      if (window.TradingView) {
+        try {
+          new window.TradingView.widget({
+            container_id: "tradingview_eurusd",
+            autosize: true,
+            symbol: "FX:EURUSD",
+            interval: "D",
+            theme: theme,
+            style: "1",
+            locale: "en",
+            width: "100%",
+            height: 400
+          });
+        } catch (e) {
+          console.warn("TradingView widget init failed:", e);
+        }
+      }
+    };
+    document.head.appendChild(script);
+  } else {
+    // re-init via existing lib
     if (window.TradingView) {
-      new window.TradingView.widget({
-        container_id: "tradingview_eurusd",
-        autosize: true,
-        symbol: "FX:EURUSD",
-        interval: "D",
-        theme: theme,
-        style: "1",
-        locale: "en",
-        width: "100%",
-        height: 400
-      });
+      try {
+        new window.TradingView.widget({
+          container_id: "tradingview_eurusd",
+          autosize: true,
+          symbol: "FX:EURUSD",
+          interval: "D",
+          theme: theme,
+          style: "1",
+          locale: "en",
+          width: "100%",
+          height: 400
+        });
+      } catch (e) {
+        console.warn("TradingView widget re-init failed:", e);
+      }
     }
-  };
-  document.head.appendChild(script);
+  }
 }
 
-// ====================================================================
-// === CHART.JS ANALYTICS CHART ===
-// ====================================================================
+////////////////////
+// Chart.js init //
+////////////////////
 function initChart() {
-  const ctx = document.getElementById('analyticsChart')?.getContext('2d');
+  const canvas = document.getElementById('analyticsChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
   if (window.dashboardChart) {
-    window.dashboardChart.destroy();
+    try { window.dashboardChart.destroy(); } catch (e) { /* ignore */ }
   }
+
+  const labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dataPoints = [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500];
 
   window.dashboardChart = new Chart(ctx, {
     type: 'line',
-     {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    data: {
+      labels: labels,
       datasets: [{
         label: 'Portfolio Value',
-         [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500],
+        data: dataPoints,
         borderColor: '#dc691e',
         borderWidth: 2,
         fill: false,
         tension: 0.4,
-        pointRadius: 0,
+        pointRadius: 0
       }]
     },
     options: {
@@ -490,66 +479,67 @@ function initChart() {
   });
 }
 
-// ====================================================================
-// === UI EVENT LISTENERS ===
-// ====================================================================
+///////////////
+// UI / events
+///////////////
 function initUI() {
   // Theme toggle
-  if (themeToggleBtn && themeIcon) {
+  if (DOM.themeToggle && DOM.themeIcon) {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark-mode') {
       document.body.classList.add('dark-mode');
-      themeIcon.classList.replace("fa-moon", "fa-sun");
+      DOM.themeIcon.classList.replace("fa-moon", "fa-sun");
     }
 
-    themeToggleBtn.addEventListener("click", () => {
+    DOM.themeToggle.addEventListener("click", () => {
       document.body.classList.toggle("dark-mode");
       if (document.body.classList.contains("dark-mode")) {
-        themeIcon.classList.replace("fa-moon", "fa-sun");
+        DOM.themeIcon.classList.replace("fa-moon", "fa-sun");
         localStorage.setItem('theme', 'dark-mode');
       } else {
-        themeIcon.classList.replace("fa-sun", "fa-moon");
+        DOM.themeIcon.classList.replace("fa-sun", "fa-moon");
         localStorage.setItem('theme', 'light-mode');
       }
+      // small timeout to let CSS repaint before reinit TradingView
       setTimeout(initTradingView, 300);
     });
   }
 
   // Sidebar toggle
-  if (sidebar && sidebarToggleBtn && mainContent && mobileOverlay && hamburgerIcon) {
+  if (DOM.sidebar && DOM.sidebarToggle && DOM.mainContent && DOM.mobileOverlay && DOM.hamburgerIcon) {
     const mediaQuery = window.matchMedia("(max-width: 768px)");
 
     const toggleSidebar = () => {
       if (mediaQuery.matches) {
-        sidebar.classList.toggle("open");
-        mainContent.classList.toggle("pushed-mobile");
-        if (mobileOverlay) mobileOverlay.classList.toggle("visible");
-        sidebarToggleBtn.classList.toggle("is-active");
-      } else if (dashboardContainer) {
-        dashboardContainer.classList.toggle("sidebar-collapsed");
-        sidebarToggleBtn.classList.toggle("is-active");
+        DOM.sidebar.classList.toggle("open");
+        DOM.mainContent.classList.toggle("pushed-mobile");
+        if (DOM.mobileOverlay) DOM.mobileOverlay.classList.toggle("visible");
+        DOM.sidebarToggle.classList.toggle("is-active");
+      } else if (DOM.dashboardContainer) {
+        DOM.dashboardContainer.classList.toggle("sidebar-collapsed");
+        DOM.sidebarToggle.classList.toggle("is-active");
       }
 
-      if (hamburgerIcon.classList.contains("fa-bars")) {
-        hamburgerIcon.classList.replace("fa-bars", "fa-times");
+      if (DOM.hamburgerIcon.classList.contains("fa-bars")) {
+        DOM.hamburgerIcon.classList.replace("fa-bars", "fa-times");
       } else {
-        hamburgerIcon.classList.replace("fa-times", "fa-bars");
+        DOM.hamburgerIcon.classList.replace("fa-times", "fa-bars");
       }
     };
 
-    sidebarToggleBtn.addEventListener("click", toggleSidebar);
-    if (mobileOverlay) mobileOverlay.addEventListener("click", toggleSidebar);
+    DOM.sidebarToggle.addEventListener("click", toggleSidebar);
+    if (DOM.mobileOverlay) DOM.mobileOverlay.addEventListener("click", toggleSidebar);
 
     const setInitialSidebarState = () => {
       if (mediaQuery.matches) {
-        sidebar.classList.remove("open");
-        mainContent.classList.remove("pushed-mobile");
-        if (mobileOverlay) mobileOverlay.classList.remove("visible");
+        DOM.sidebar.classList.remove("open");
+        DOM.mainContent.classList.remove("pushed-mobile");
+        if (DOM.mobileOverlay) DOM.mobileOverlay.classList.remove("visible");
       }
-      if (dashboardContainer) dashboardContainer.classList.remove("sidebar-collapsed");
-      hamburgerIcon.classList.remove("fa-times");
-      hamburgerIcon.classList.add("fa-bars");
-      sidebarToggleBtn.classList.remove("is-active");
+      if (DOM.dashboardContainer) DOM.dashboardContainer.classList.remove("sidebar-collapsed");
+      DOM.hamburgerIcon.classList.remove("fa-times");
+      DOM.hamburgerIcon.classList.add("fa-bars");
+      DOM.sidebarToggle.classList.remove("is-active");
     };
 
     setInitialSidebarState();
@@ -557,35 +547,136 @@ function initUI() {
   }
 
   // Profile dropdown
-  if (profileDropdown && dropdownMenu) {
-    profileDropdown.addEventListener("click", (e) => {
-      dropdownMenu.classList.toggle("hidden");
+  if (DOM.profileDropdown && DOM.dropdownMenu) {
+    DOM.profileDropdown.addEventListener("click", (e) => {
+      DOM.dropdownMenu.classList.toggle("hidden");
       e.stopPropagation();
     });
 
     document.addEventListener("click", (e) => {
-      if (!profileDropdown.contains(e.target)) {
-        dropdownMenu.classList.add("hidden");
+      if (!DOM.profileDropdown.contains(e.target)) {
+        DOM.dropdownMenu.classList.add("hidden");
       }
     });
   }
 }
 
-// ====================================================================
-// === INITIALIZE DASHBOARD ===
-// ====================================================================
+/////////////////////
+// Wire up handlers
+/////////////////////
+function wireModalButtons() {
+  if (DOM.openAddBtn && DOM.addModal) {
+    DOM.openAddBtn.addEventListener('click', () => {
+      openModal(DOM.addModal);
+      updateDepositDisplay();
+    });
+  }
+  if (DOM.openWithdrawBtn && DOM.withdrawModal) {
+    DOM.openWithdrawBtn.addEventListener('click', () => openModal(DOM.withdrawModal));
+  }
+
+  DOM.closeButtons?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modalId = btn.getAttribute('data-modal');
+      const modal = document.getElementById(modalId);
+      closeModal(modal);
+    });
+  });
+
+  [DOM.addModal, DOM.withdrawModal].forEach(modal => {
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal(modal);
+      });
+    }
+  });
+
+  if (DOM.confirmAdd) DOM.confirmAdd.addEventListener('click', handleDepositSubmit);
+  if (DOM.confirmWithdraw) DOM.confirmWithdraw.addEventListener('click', handleWithdrawSubmit);
+
+  // Wire coin/network selects to update display
+  if (DOM.coinType) DOM.coinType.addEventListener('change', updateNetworkOptions);
+  if (DOM.networkType) DOM.networkType.addEventListener('change', updateDepositDisplay);
+}
+
+//////////////////////////
+// App initialization //
+//////////////////////////
 document.addEventListener("DOMContentLoaded", () => {
+  // Ensure firebase objects are available on window
+  db = window.db;
+  auth = window.auth;
+
+  if (!db || !auth) {
+    console.error("Firebase not initialized. Check HTML script (window.db/window.auth).");
+    alert("System error. Please refresh the page.");
+    return;
+  }
+
+  // Query DOM once DOM is ready (prevents null refs)
+  DOM.profileName = document.getElementById('profileName');
+  DOM.balanceAmount = document.getElementById('balanceAmount');
+  DOM.roi = document.getElementById('roi');
+  DOM.initialInvestment = document.getElementById('initialInvestment');
+  DOM.activeDeposit = document.getElementById('activeDeposit');
+  DOM.transactionList = document.getElementById('transactionList');
+
+  DOM.addModal = document.getElementById('addModal');
+  DOM.withdrawModal = document.getElementById('withdrawModal');
+  DOM.openAddBtn = document.getElementById('openAddFunds');
+  DOM.openWithdrawBtn = document.getElementById('openWithdrawFunds');
+  DOM.closeButtons = document.querySelectorAll('.close-btn');
+  DOM.confirmAdd = document.getElementById('confirmAdd');
+  DOM.confirmWithdraw = document.getElementById('confirmWithdraw');
+  DOM.addAmount = document.getElementById('addAmount');
+  DOM.withdrawAmount = document.getElementById('withdrawAmount');
+  DOM.statusAdd = document.getElementById('statusAdd');
+  DOM.statusWithdraw = document.getElementById('statusWithdraw');
+
+  DOM.coinType = document.getElementById('coinType');
+  DOM.networkType = document.getElementById('networkType');
+  DOM.walletAddressDisplay = document.getElementById('walletAddressDisplay');
+  DOM.qrCodeImage = document.getElementById('qrCodeImage');
+
+  DOM.sidebar = document.getElementById("sidebar");
+  DOM.sidebarToggle = document.getElementById("sidebar-toggle");
+  DOM.hamburgerIcon = document.querySelector("#sidebar-toggle i");
+  DOM.mainContent = document.getElementById("main-content");
+  DOM.mobileOverlay = document.getElementById("mobile-overlay");
+  DOM.themeToggle = document.getElementById("theme-toggle");
+  DOM.themeIcon = document.querySelector("#theme-toggle i");
+  DOM.profileDropdown = document.getElementById("profile-dropdown");
+  DOM.dropdownMenu = DOM.profileDropdown ? DOM.profileDropdown.querySelector(".dropdown-menu") : null;
+  DOM.dashboardContainer = document.getElementById("dashboard-container");
+
+  // create popup container
+  showPopup("Dashboard loaded (debug) — popup system active", true);
+
   initUI();
   initTradingView();
   initChart();
   fetchWalletConfig();
-  
-  // Start real-time listeners
-  const unsubscribeUser = listenToUserData();
-  const unsubscribeTransactions = listenToTransactions();
-  
-  window.addEventListener('beforeunload', () => {
-    unsubscribeUser?.();
-    unsubscribeTransactions?.();
+  wireModalButtons();
+
+  // Only start listeners once auth state is known
+  let unsubUser = null, unsubTx = null;
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      currentUserId = user.uid;
+      // start realtime listeners
+      unsubUser = startUserListener(currentUserId);
+      unsubTx = startTransactionsListener(currentUserId);
+    } else {
+      // cleanup if logged out
+      currentUserId = null;
+      userProfile = {};
+      if (unsubUser) unsubUser();
+      if (unsubTx) unsubTx();
+    }
   });
-});});
+
+  window.addEventListener('beforeunload', () => {
+    if (unsubUser) unsubUser();
+    if (unsubTx) unsubTx();
+  });
+});
