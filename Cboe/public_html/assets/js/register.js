@@ -1,16 +1,11 @@
-// 🛑 REMOVED: ES6 IMPORTS (incompatible with global Firebase)
-// import { ... } from "firebase..."; ← ❌ DELETE THESE
-
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ✅ FIXED: Access Firebase services from global window object
-    // Make sure these are initialized in your HTML <head>
+    // ✅ FIXED: Access Firebase from global scope (must be initialized in HTML)
     const auth = window.auth;
     const db = window.db;
 
     if (!auth || !db) {
-        console.error("Firebase not initialized! Check your HTML script.");
-        alert("System error: Firebase not loaded. Please refresh the page.");
+        alert("Firebase not loaded. Check your HTML script tags.");
         return;
     }
 
@@ -49,15 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameFeedback = document.getElementById('usernameFeedback');
     const usernameSuggestions = document.getElementById('usernameSuggestions');
     const phoneFeedback = document.getElementById('phoneFeedback');
-    const strengthBar = document.getElementById('strengthBar');
+    const strengthBar = document.getElementById('strengthBar'); // ✅ Ensure HTML has "strength-bar" (not "stength-bar")
     const strengthText = document.getElementById('strengthText');
     const psi = document.querySelector('.password-strength-indicator');
+
+    // 🔒 NEW: Prevent multiple submissions
+    let isSubmitting = false;
 
     // 💬 Unified modal function
     const showModal = (title, message, isError = true, showSpinner = false) => {
         if (modalTitle) modalTitle.textContent = title;
         if (modalMessage) modalMessage.textContent = message;
-        
         if (modalIcon) {
             if (showSpinner) {
                 modalIcon.classList.add('hidden');
@@ -77,15 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) modal.style.display = "none";
         };
     }
-
     window.onclick = (event) => {
-        if (event.target === modal) {
-            if (modal) modal.style.display = "none";
-        }
+        if (event.target === modal && modal) modal.style.display = "none";
     };
-    
+
     // Utility: Display error
     const displayError = (element, message) => {
+        if (!element) return;
         element.textContent = message;
         element.style.display = 'block';
         const input = element.previousElementSibling?.nextElementSibling || element.previousElementSibling;
@@ -97,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Utility: Clear error
     const clearError = (element) => {
+        if (!element) return;
         element.textContent = '';
         element.style.display = 'none';
         const input = element.previousElementSibling?.nextElementSibling || element.previousElementSibling;
@@ -121,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ✅ FIXED: Username availability check with proper error handling
     const checkUsernameAvailability = async (username) => {
         clearError(usernameError);
         usernameSuggestions.innerHTML = '';
@@ -133,20 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
             usernameFeedback.textContent = '';
             return false;
         }
-
         if (username.length < 6) {
             displayError(usernameError, 'Username must be at least 6 characters.');
             usernameFeedback.textContent = 'Minimum 6 characters required.';
-            usernameFeedback.classList.remove('valid');
             return false;
         }
 
         usernameFeedback.textContent = 'Checking availability...';
-        usernameFeedback.classList.remove('valid');
-
         try {
-            // ✅ FIXED: Use Firestore query correctly
-            const q = window.firebase.firestore().collection("users").where("username", "==", username);
+            const q = db.collection("users").where("username", "==", username);
             const querySnapshot = await q.get();
 
             if (querySnapshot.empty) {
@@ -157,13 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 displayError(usernameError, 'This username is already taken.');
                 usernameFeedback.textContent = 'Username taken.';
-                usernameFeedback.classList.remove('valid');
                 usernameInput.classList.add('invalid');
 
-                // ✅ FIXED: Generate suggestions safely
-                const base = username.replace(/\d+$/, '');
+                const base = username.replace(/\d+$/, '') || username;
                 const suggestions = [
-                    base + Math.floor(10 + Math.random() * 90),
+                    base + Math.floor(100 + Math.random() * 900),
                     base + '_trader',
                     base + '2025'
                 ].filter(s => s.length >= 6);
@@ -172,13 +160,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 suggestions.forEach(s => {
                     const li = document.createElement('li');
                     li.textContent = s;
-                    // ✅ FIXED: Use classList instead of className string
-                    li.classList.add('suggestion-item', 'cursor-pointer', 'p-1', 'rounded-md');
+                    li.style.padding = '4px 8px';
                     li.style.cursor = 'pointer';
-                    li.addEventListener('click', () => {
+                    li.style.borderRadius = '4px';
+                    li.onmouseover = () => li.style.backgroundColor = '#f0f0f0';
+                    li.onmouseout = () => li.style.backgroundColor = '';
+                    li.onclick = () => {
                         usernameInput.value = s;
                         usernameInput.dispatchEvent(new Event('input'));
-                    });
+                    };
                     usernameSuggestions.appendChild(li);
                 });
                 usernameSuggestions.style.display = 'block';
@@ -187,22 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Username check error:", error);
             displayError(usernameError, 'Error checking availability. Try again.');
-            usernameFeedback.textContent = 'Error during check.';
             return false;
         }
     };
-
-    usernameInput.addEventListener('input', () => {
-        const value = usernameInput.value.trim();
-        if (value.length > 0) {
-            checkUsernameAvailability(value);
-        } else {
-            usernameFeedback.textContent = '';
-            usernameSuggestions.innerHTML = '';
-            usernameSuggestions.style.display = 'none';
-            clearError(usernameError);
-        }
-    });
 
     const validateEmail = () => {
         const email = emailInput.value.trim();
@@ -219,20 +196,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    phoneInput.addEventListener('input', () => {
-        const value = phoneInput.value.trim();
+    const validatePhone = () => {
+        const phone = phoneInput.value.trim();
         const phoneRegex = /^\+?[0-9]{7,15}$/;
-        if (!phoneRegex.test(value) && value.length > 0) {
+        if (phone === '') {
+            // Optional field, no error
+            return true;
+        }
+        if (!phoneRegex.test(phone)) {
             phoneFeedback.textContent = 'Enter a valid phone number (e.g., +1234567890)';
             phoneFeedback.classList.remove('valid');
-        } else if (value.length === 0) {
-            phoneFeedback.textContent = '';
-            phoneFeedback.classList.remove('valid');
+            return false;
         } else {
             phoneFeedback.textContent = 'Valid phone number';
             phoneFeedback.classList.add('valid');
+            return true;
         }
-    });
+    };
 
     const checkPasswordStrength = (password) => {
         let strength = 0;
@@ -241,6 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (/[a-z]/.test(password)) strength++;
         if (/[0-9]/.test(password)) strength++;
         if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(password)) strength++;
+
+        if (psi) psi.style.display = password ? 'block' : 'none';
+        if (!strengthBar || !strengthText) return { strength, feedback: '' };
 
         strengthBar.className = 'strength-bar';
         strengthBar.style.width = '0%';
@@ -263,67 +246,62 @@ document.addEventListener('DOMContentLoaded', () => {
             strengthText.textContent = 'Strong';
             strengthText.style.color = '#28a745';
         }
-
         return { strength, feedback: '' };
     };
 
     const validatePassword = () => {
         const password = passwordInput.value;
         const { strength } = checkPasswordStrength(password);
-
         if (password.length === 0) {
             displayError(passwordError, 'Password is required.');
             return false;
-        } else if (strength < 5) {
+        }
+        if (strength < 5) {
             displayError(passwordError, 'Password is too weak. Include uppercase, lowercase, number, and special character.');
             return false;
-        } else {
-            clearError(passwordError);
-            return true;
         }
+        clearError(passwordError);
+        return true;
     };
 
     const validateConfirmPassword = () => {
         const password = passwordInput.value;
         const confirmPassword = confirmPasswordInput.value;
-
         if (confirmPassword === '') {
             displayError(confirmPasswordError, 'Confirm Password is required.');
             return false;
-        } else if (password !== confirmPassword) {
+        }
+        if (password !== confirmPassword) {
             displayError(confirmPasswordError, 'Passwords do not match.');
             return false;
-        } else {
-            clearError(confirmPasswordError);
-            return true;
         }
+        clearError(confirmPasswordError);
+        return true;
     };
 
     const validateTerms = () => {
         if (!termsCheckbox.checked) {
             displayError(termsError, 'You must agree to the Terms and Conditions.');
             return false;
-        } else {
-            clearError(termsError);
-            return true;
         }
+        clearError(termsError);
+        return true;
     };
     
     const validateAgeAgreement = () => {
         if (!agreeCheckbox.checked) {
             displayError(ageAgreementError, 'You must confirm your age and accept the Service Agreement.');
             return false;
-        } else {
-            clearError(ageAgreementError);
-            return true;
         }
+        clearError(ageAgreementError);
+        return true;
     };
 
-    // Real-time validation
+    // ✅ REAL-TIME VALIDATION (as user types)
     fullNameInput.addEventListener('input', validateFullName);
     emailInput.addEventListener('input', validateEmail);
+    phoneInput.addEventListener('input', validatePhone);
     passwordInput.addEventListener('input', () => {
-        psi.style.display = 'block';
         validatePassword();
         validateConfirmPassword();
     });
@@ -331,78 +309,114 @@ document.addEventListener('DOMContentLoaded', () => {
     termsCheckbox.addEventListener('change', validateTerms);
     agreeCheckbox.addEventListener('change', validateAgeAgreement);
 
-    // ✅ FIXED: Form submission with proper Firebase calls
+    // ✅ VALIDATION ON FOCUS LOSS (blur)
+    fullNameInput.addEventListener('blur', validateFullName);
+    emailInput.addEventListener('blur', validateEmail);
+    phoneInput.addEventListener('blur', validatePhone);
+    passwordInput.addEventListener('blur', validatePassword);
+    confirmPasswordInput.addEventListener('blur', validateConfirmPassword);
+    usernameInput.addEventListener('blur', () => {
+        if (usernameInput.value.trim()) {
+            checkUsernameAvailability(usernameInput.value.trim());
+        }
+    });
+
+    // ✅ USERNAME INPUT (real-time)
+    usernameInput.addEventListener('input', () => {
+        const value = usernameInput.value.trim();
+        if (value.length > 0) {
+            checkUsernameAvailability(value);
+        } else {
+            clearError(usernameError);
+            usernameFeedback.textContent = '';
+            usernameSuggestions.style.display = 'none';
+        }
+    });
+
+    // ✅ FORM SUBMISSION (with async safety)
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
+        // 🔒 Prevent multiple submissions
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        // Run synchronous validations first
         const isFullNameValid = validateFullName();
         const isEmailValid = validateEmail();
+        const isPhoneValid = validatePhone();
         const isPasswordValid = validatePassword();
         const isConfirmPasswordValid = validateConfirmPassword();
         const isTermsValid = validateTerms();
         const isAgeAgreementValid = validateAgeAgreement();
-        const isUsernameAvailable = await checkUsernameAvailability(usernameInput.value.trim());
 
-        if (isFullNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTermsValid && isAgeAgreementValid && isUsernameAvailable) {
-            const fullName = fullNameInput.value.trim();
-            const username = usernameInput.value.trim();
-            const email = emailInput.value.trim();
-            const phone = phoneInput.value.trim();
-            const password = passwordInput.value;
-            const accountType = accountTypeInput.value;
-            const country = countryInput.value;
-            const currency = currencyInput.value;
-
-            showModal('Registering...', 'Creating your account...', false, true);
-
-            try {
-                // ✅ FIXED: Use global Firebase auth
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-
-                // ✅ FIXED: Update profile using global auth
-                await user.updateProfile({
-                    displayName: username
-                });
-
-                // ✅ FIXED: Save to Firestore using global db
-                await db.collection("users").doc(user.uid).set({
-                    fullName: fullName,
-                    username: username,
-                    email: email,
-                    phone: phone,
-                    accountType: accountType,
-                    country: country,
-                    currency: currency,
-                    balance: 0.00,
-                    roi: 0.00,
-                    deposits: 0.00,
-                    activeTrades: 0,
-                    isFrozen: false,
-                    isBanned: false,
-                    createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-                });
-
-                showModal('Registration Successful', `Welcome, ${username}! Redirecting to login...`, false);
-                form.reset();
-                setTimeout(() => {
-                    window.location.href = "../login/login.html";
-                }, 2000);
-
-            } catch (error) {
-                console.error('Registration error:', error);
-                let errorMessage = "An unexpected error occurred.";
-                if (error.code === 'auth/email-already-in-use') {
-                    errorMessage = 'This email is already registered. Please log in.';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Password is too weak.';
-                } else {
-                    errorMessage = error.message || "Registration failed. Please try again.";
-                }
-                showModal('Registration Failed', errorMessage, true);
-            }
-        } else {
+        if (!isFullNameValid || !isEmailValid || !isPhoneValid || 
+            !isPasswordValid || !isConfirmPasswordValid || 
+            !isTermsValid || !isAgeAgreementValid) {
+            isSubmitting = false;
             showModal('Validation Error', 'Please correct all form errors.', true);
+            return;
+        }
+
+        // Check username (async)
+        const isUsernameAvailable = await checkUsernameAvailability(usernameInput.value.trim());
+        if (!isUsernameAvailable) {
+            isSubmitting = false;
+            return; // Error already shown
+        }
+
+        // Proceed with registration
+        const fullName = fullNameInput.value.trim();
+        const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const password = passwordInput.value;
+        const accountType = accountTypeInput.value;
+        const country = countryInput.value;
+        const currency = currencyInput.value;
+
+        showModal('Registering...', 'Creating your account...', false, true);
+
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+
+            await user.updateProfile({ displayName: username });
+
+            await db.collection("users").doc(user.uid).set({
+                fullName: fullName,
+                username: username,
+                email: email,
+                phone: phone,
+                accountType: accountType,
+                country: country,
+                currency: currency,
+                balance: 0.00,
+                roi: 0.00,
+                deposits: 0.00,
+                activeTrades: 0,
+                isFrozen: false,
+                isBanned: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+
+            showModal('Registration Successful', `Welcome, ${username}! Redirecting to login...`, false);
+            form.reset();
+            setTimeout(() => {
+                window.location.href = "../login/login.html";
+            }, 2000);
+
+        } catch (error) {
+            console.error('Registration error:', error);
+            let errorMessage = "An unexpected error occurred.";
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already registered. Please log in.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Password is too weak.';
+            }
+            showModal('Registration Failed', errorMessage, true);
+        } finally {
+            isSubmitting = false; // 🔓 Always reset
         }
     });
-});});
+});
