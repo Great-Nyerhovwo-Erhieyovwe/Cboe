@@ -7,7 +7,7 @@ import {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof auth === 'undefined') {
-        console.error("Firebase Auth is not initialized. Check firebase-config.js.");
+        alert("❌ Firebase Auth not initialized. Check firebase-config.js.");
         return;
     }
     
@@ -16,14 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput = document.getElementById('adminPassword');
     const errorMsg = document.getElementById('adminLoginError');
 
-    // ✅ Watch for login state and redirect
+    // ✅ Watch for login state
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            console.log("✅ Authenticated as:", user.email);
-            // redirect only if already on login page
-            if (window.location.pathname.includes("admin")) {
-                window.location.href = "./dashboard.html";
-            }
+            console.log("✅ Logged in as:", user.email);
+            // Make sure dashboard.html exists relative to THIS file
+            window.location.replace("dashboard.html"); 
+        } else {
+            console.log("ℹ️ No user signed in.");
         }
     });
 
@@ -41,11 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
+                console.log("🔑 Attempting login with:", email);
                 await signInWithEmailAndPassword(auth, email, password);
-                console.log("Login successful, waiting for redirect...");
-                // redirect will now happen in onAuthStateChanged
+                console.log("✅ Login success — waiting for onAuthStateChanged...");
+                // redirect now handled by onAuthStateChanged
             } catch (error) {
-                console.error("Firebase Login Error:", error);
+                console.error("❌ Firebase Login Error:", error);
                 let message = 'Login failed. Invalid email or password.';
                 if (error.code === 'auth/invalid-email') {
                     message = 'Invalid email format.';
