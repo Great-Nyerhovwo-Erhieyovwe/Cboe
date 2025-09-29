@@ -2,200 +2,215 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | Manage Users</title>
-    <link rel="stylesheet" href="./assets/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
-        integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
-    <script type="module">
-        // Import the necessary Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG IF DIFFERENT)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-            authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com",
-            projectId: "cboefirebaseserver",
-            storageBucket: "cboefirebaseserver.firebasestorage.app",
-            messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-            measurementId: "G-FCZEERNC06"
-        };
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Manage Users</title>
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        
-        // Initialize services and make them globally accessible
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
+  <link rel="stylesheet" href="./assets/css/dashboard.css" />
 
-        // 🛑 Admin-specific Auth Check and Redirection 🛑
-        onAuthStateChanged(window.auth, async (user) => {
-            if (user) {
-                window.currentUser = user; // Make user object globally available
-                
-                // Check if user is an Admin in Firestore
-                const userDocRef = doc(window.db, "users", user.uid);
-                const docSnap = await getDoc(userDocRef);
+  <!-- ✅ Font Awesome fixed to a valid version -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    integrity="sha512-pO12rT+DcL5n3ePxx5hR2TFWReS+UxZ35uR9Y9Af8HzlxVfKfFQ8eOi5GK3nLkAfiL0+6Bz/J6E4jqG4lgFj1g=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 
-                if (docSnap.exists() && docSnap.data().isAdmin === true) {
-                    console.log("Admin user authenticated and profile loaded.");
-                    // The rest of the page setup will run in manage-users.js
-                    document.body.classList.remove('loading');
-                } else {
-                    console.warn("User is not an admin. Redirecting.");
-                    await signOut(window.auth);
-                    window.location.href = "../login/login.html"; // Redirect unauthorized users
-                }
-            } else {
-                window.currentUser = null;
-                console.log("No user signed in. Redirecting to login.");
-                window.location.href = "../login/login.html";
-            }
-        });
-    </script>
-    <style>
-        .loading #dashboard-container { display: none; }
-        .light-mode { background-color: #f4f7f6; }
-    </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+    // ✅ Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
+      authDomain: "cboefirebaseserver.firebaseapp.com",
+      projectId: "cboefirebaseserver",
+      storageBucket: "cboefirebaseserver.firebasestorage.app",
+      messagingSenderId: "755491003217",
+      appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
+      measurementId: "G-FCZEERNC06",
+    };
+
+    // ✅ Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    window.auth = getAuth(app);
+    window.db = getFirestore(app);
+
+    // ✅ Auth + Admin check
+    onAuthStateChanged(window.auth, async (user) => {
+      if (user) {
+        window.currentUser = user;
+
+        const userDocRef = doc(window.db, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists() && docSnap.data().isAdmin === true) {
+          console.log("Admin user authenticated.");
+          document.body.classList.remove("loading");
+        } else {
+          console.warn("Not an admin → redirecting.");
+          await signOut(window.auth);
+          window.location.href = "../admin.html";
+        }
+      } else {
+        console.log("No user signed in → redirecting.");
+        window.location.href = "../admin.html";
+      }
+    });
+  </script>
+
+  <style>
+    .loading #dashboard-container {
+      display: none;
+    }
+    .light-mode {
+      background-color: #f4f7f6;
+    }
+  </style>
 </head>
 
-<body class="light-mode loading"> <div id="dashboard-container">
-        <aside id="sidebar" class="sidebar"> 
-            <div class="sidebar-header">
-                <h2>Cboe Admin</h2>
-            </div>
-            <nav id="sidebar-menu">
-                <ul>
-                    <li><a href="dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
-                    <li><a href="manage-users.html" class="active"><i class="fa-solid fa-user-gear"></i><span>Manage Users</span></a></li> <li><a href="transaction.html"><i class="fa-solid fa-wallet"></i><span>Transactions</span></a></li>
-                </ul>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="theme-toggle" class="sidebar-btn">
-                    <i class="fas fa-moon"></i><span>Toggle Theme</span>
-                </button>
-                <button id="logout-btn" class="sidebar-btn profile-sidebar-btn">
-                    <i class="fas fa-sign-out-alt"></i><span>Logout</span>
-                </button>
-            </div>
-        </aside>
+<body class="light-mode loading">
+  <div id="dashboard-container">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h2>Cboe Admin</h2>
+      </div>
+      <nav id="sidebar-menu">
+        <ul>
+          <li>
+            <a href="dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a>
+          </li>
+          <li>
+            <a href="manage-users.html" class="active"><i class="fa-solid fa-user-gear"></i><span>Manage Users</span></a>
+          </li>
+          <li>
+            <a href="transaction.html"><i class="fa-solid fa-wallet"></i><span>Transactions</span></a>
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="sidebar-btn">
+          <i class="fas fa-moon"></i><span>Toggle Theme</span>
+        </button>
+        <button id="logout-btn" class="sidebar-btn profile-sidebar-btn">
+          <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+        </button>
+      </div>
+    </aside>
 
-        <div id="main-content">
-            <header id="navbar" class="navbar">
-                <div class="navbar-left">
-                    <button id="sidebar-toggle" class="hamburger-btn">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <span class="company-name">Cboe Admin</span>
-                </div>
-
-                <div class="navbar-right"> <div id="nav-notification">
-                        <i class="fa-solid fa-bell"></i>
-                    </div>
-
-                    <div id="profile-dropdown" class="profile-container">
-                        <div class="profile-info">
-                            <span class="user-name" id="admin-user-name">Welcome, Admin</span> <img src="" alt="avatar" class="profile-avatar">
-                        </div>
-                        <div class="dropdown-menu hidden">
-                            <a href="#" id="dropdown-settings">Settings</a>
-                            <a href="#" id="dropdown-logout">Logout</a> 
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main id="content">
-                <h3 id="page-title">Manage Users</h3>
-
-                <section>
-                    <div class="table-controls">
-                        <input type="text" id="user-search" placeholder="Search by name, email, or username">
-                        <select id="status-filter">
-                            <option value="all">All Users</option>
-                            <option value="active">Active/Normal</option>
-                            <option value="banned">Banned</option>
-                            <option value="frozen">Frozen</option>
-                        </select>
-                    </div>
-                    
-                    <div class="table-responsive"> <table id="users-table">
-                            <thead>
-                                <tr>
-                                    <th>UID</th> <th>Name (Username)</th>
-                                    <th>Email</th>
-                                    <th>Account Type</th>
-                                    <th>Balance ($)</th>
-                                    <th>ROI (%)</th>
-                                    <th>Status</th> 
-                                    <th>Actions</th> 
-                                </tr>
-                            </thead>
-                            <tbody id="users-table-body">
-                                <tr><td colspan="8" style="text-align: center;">Loading users...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="pagination-controls">
-                        </div>
-                    
-                </section>
-            </main>
+    <div id="main-content">
+      <header id="navbar" class="navbar">
+        <div class="navbar-left">
+          <button id="sidebar-toggle" class="hamburger-btn">
+            <i class="fas fa-bars"></i>
+          </button>
+          <span class="company-name">Cboe Admin</span>
         </div>
-    </div>
 
-    <div id="action-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h3 id="modal-action-title">Update User Data</h3>
-            <p id="modal-action-message"></p>
-            <form id="update-user-form">
-                <input type="hidden" id="modal-user-uid">
+        <div class="navbar-right">
+          <div id="nav-notification">
+            <i class="fa-solid fa-bell"></i>
+          </div>
 
-                <h4>Balance Adjustment</h4>
-                <div class="form-group">
-                    <label for="new-balance-amount">Amount:</label>
-                    <input type="number" id="new-balance-amount" step="0.01" value="0.00">
-                </div>
-                <div class="form-group">
-                    <label for="balance-action">Action:</label>
-                    <select id="balance-action">
-                        <option value="add">Add to Balance</option>
-                        <option value="subtract">Subtract from Balance</option>
-                        <option value="set">Set New Balance</option>
-                    </select>
-                </div>
-                
-                <hr>
-                
-                <h4>Account Status</h4>
-                <div class="form-group">
-                    <label for="account-status">Set Status:</label>
-                    <select id="account-status">
-                        <option value="normal">Normal</option>
-                        <option value="frozen">Frozen (Cannot Trade/Withdraw)</option>
-                        <option value="banned">Banned (Cannot Log In)</option>
-                        <option value="admin">Promote to Admin</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="execute-update-btn" class="btn-primary">Execute Update</button>
-            </form>
+          <div id="profile-dropdown" class="profile-container">
+            <div class="profile-info">
+              <span class="user-name" id="admin-user-name">Welcome, Admin</span>
+              <img src="" alt="avatar" class="profile-avatar" />
+            </div>
+            <div class="dropdown-menu hidden">
+              <a href="#" id="dropdown-settings">Settings</a>
+              <a href="#" id="dropdown-logout">Logout</a>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <main id="content">
+        <h3 id="page-title">Manage Users</h3>
+
+        <section>
+          <div class="table-controls">
+            <input type="text" id="user-search" placeholder="Search by name, email, or username" />
+            <select id="status-filter">
+              <option value="all">All Users</option>
+              <option value="active">Active/Normal</option>
+              <option value="banned">Banned</option>
+              <option value="frozen">Frozen</option>
+            </select>
+          </div>
+
+          <div class="table-responsive">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>UID</th>
+                  <th>Name (Username)</th>
+                  <th>Email</th>
+                  <th>Account Type</th>
+                  <th>Balance ($)</th>
+                  <th>ROI (%)</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr><td colspan="8" style="text-align: center;">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="pagination-controls"></div>
+        </section>
+      </main>
     </div>
-    <div id="mobile-overlay" class="mobile-overlay hidden"></div>
-<script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js" type="module"></script>
+  </div>
 
-   <script type="module" src="../firebase-config.js"></script> 
+  <!-- User Action Modal -->
+  <div id="action-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h3 id="modal-action-title">Update User Data</h3>
+      <p id="modal-action-message"></p>
+      <form id="update-user-form">
+        <input type="hidden" id="modal-user-uid" />
 
-<script type="module" src="../assets/js/dashboard.js"></script>
+        <h4>Balance Adjustment</h4>
+        <div class="form-group">
+          <label for="new-balance-amount">Amount:</label>
+          <input type="number" id="new-balance-amount" step="0.01" value="0.00" />
+        </div>
+        <div class="form-group">
+          <label for="balance-action">Action:</label>
+          <select id="balance-action">
+            <option value="add">Add to Balance</option>
+            <option value="subtract">Subtract from Balance</option>
+            <option value="set">Set New Balance</option>
+          </select>
+        </div>
 
+        <hr />
+
+        <h4>Account Status</h4>
+        <div class="form-group">
+          <label for="account-status">Set Status:</label>
+          <select id="account-status">
+            <option value="normal">Normal</option>
+            <option value="frozen">Frozen</option>
+            <option value="banned">Banned</option>
+            <option value="admin">Promote to Admin</option>
+          </select>
+        </div>
+
+        <button type="submit" id="execute-update-btn" class="btn-primary">Execute Update</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+
+  <!-- ✅ Load scripts in correct order -->
+  <script type="module" src="../firebase-config.js"></script>
+  <script type="module" src="../assets/js/dashboard.js"></script>
 </body>
 </html>
