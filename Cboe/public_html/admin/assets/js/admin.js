@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (allowed) {
                 console.log("✅ User is admin. Redirecting...");
                 if (window.location.pathname.endsWith("admin.html")) {
-                    window.location.replace("dashboard.html");
+                    window.location.replace("./dashboard.html");
                 }
             } else {
                 console.warn("❌ Not an admin. Signing out...");
