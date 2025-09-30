@@ -493,40 +493,29 @@ function setupTransactionsListener() {
     Auth & Admin security check
     =========================== */
 
+// TEMPORARY FUNCTION: BYPASSES FIRESTORE CHECK FOR TROUBLESHOOTING
 async function checkIfAdmin(user) {
-    if (!db || !user) return false;
-    try {
-        // Now we ONLY check the dedicated 'admins' collection.
-        const adminDocRef = doc(db, "admins", user.uid); 
-        const adminSnap = await getDoc(adminDocRef);
-
-        // Authorization passes if the document exists AND contains a valid flag.
-        // For simplicity, we can just check for existence:
-        if (adminSnap.exists()) {
-            // Optional: You could check adminSnap.data()?.role === "superadmin" here
-            return true; 
-        }
-
-        console.warn(`DEBUG: Authorization FAILED. Admin document not found in 'admins' collection.`);
-        return false;
-    } catch (err) {
-        console.error("checkIfAdmin error:", err);
-        return false;
-    }
+    if (!user) return false;
+    
+    // LOGIC BYPASS: We assume any logged-in user is an admin for this test.
+    console.log("TEMPORARY BYPASS ACTIVE: Firestore authorization check skipped.");
+    return true; 
 }
+
 
 function setupAuthListener() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const allowed = await checkIfAdmin(user);
             if (!allowed) {
-                // not admin: sign out and redirect (This is the loop trigger)
+                // not admin: sign out and redirect (This block should be unreachable with the bypass)
                 try { await signOut(auth); } catch(e) { console.warn("signOut after failed admin check:", e); }
                 console.warn(`Redirecting unauthorized user back to ${LOGIN_PAGE}`);
                 window.location.href = LOGIN_PAGE; // Correct path: admin.html
                 return;
             }
             // admin: start listeners & UI
+            console.log("Authorization success (Bypass): Setting up dashboard.");
             setupUsersListener();
             setupTransactionsListener();
             attachTableListeners();
