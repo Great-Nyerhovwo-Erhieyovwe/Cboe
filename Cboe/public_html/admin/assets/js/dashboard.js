@@ -492,27 +492,22 @@ function setupTransactionsListener() {
 /* ===========================
     Auth & Admin security check
     =========================== */
+
 async function checkIfAdmin(user) {
     if (!db || !user) return false;
     try {
-        // CRITICAL FIX: Checking for isAdmin in the dedicated 'admins' collection
-        const adminDocRef = doc(db, ADMINS_COLLECTION, user.uid);
+        // Now we ONLY check the dedicated 'admins' collection.
+        const adminDocRef = doc(db, "admins", user.uid); 
         const adminSnap = await getDoc(adminDocRef);
-        
-        if (adminSnap.exists() && adminSnap.data()?.isAdmin === true) {
-            console.log("DEBUG: Authorization passed via 'admins' collection (isAdmin: true).");
-            return true;
+
+        // Authorization passes if the document exists AND contains a valid flag.
+        // For simplicity, we can just check for existence:
+        if (adminSnap.exists()) {
+            // Optional: You could check adminSnap.data()?.role === "superadmin" here
+            return true; 
         }
 
-        // Secondary Check: Checking for isAdmin in the 'users' collection (if used for admins)
-        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.uid);
-        const userSnap = await getDoc(userDocRef);
-        if (userSnap.exists() && userSnap.data()?.isAdmin === true) {
-            console.log("DEBUG: Authorization passed via 'users' collection (isAdmin: true).");
-            return true;
-        }
-
-        console.warn(`DEBUG: Authorization FAILED for user ${user.uid}. isAdmin field not found or not true.`);
+        console.warn(`DEBUG: Authorization FAILED. Admin document not found in 'admins' collection.`);
         return false;
     } catch (err) {
         console.error("checkIfAdmin error:", err);
