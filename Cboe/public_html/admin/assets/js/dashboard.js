@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getFirestore,
     collection,
@@ -11,8 +11,8 @@ import {
     addDoc,
     getDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ===========================
     CONFIG & CONSTANTS
@@ -504,29 +504,61 @@ async function checkIfAdmin(user) {
 
 
 function setupAuthListener() {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const allowed = await checkIfAdmin(user);
-            if (!allowed) {
-                // not admin: sign out and redirect (This block should be unreachable with the bypass)
-                try { await signOut(auth); } catch(e) { console.warn("signOut after failed admin check:", e); }
-                console.warn(`Redirecting unauthorized user back to ${LOGIN_PAGE}`);
-                window.location.href = LOGIN_PAGE; // Correct path: admin.html
-                return;
-            }
-            // admin: start listeners & UI
-            console.log("Authorization success (Bypass): Setting up dashboard.");
-            setupUsersListener();
-            setupTransactionsListener();
-            attachTableListeners();
-            const adminNameEl = document.getElementById("admin-user-name");
-            if (adminNameEl) adminNameEl.textContent = `Welcome, Admin (${user.email})`;
-        } else {
-            // not logged in
-            console.log("No user logged in. Redirecting to login.");
-            window.location.href = LOGIN_PAGE; // Correct path: admin.html
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        const allowed = await checkIfAdmin(user);
+
+        if (!allowed) {
+          console.warn("❌ User logged in but not an admin.");
+
+          // Show error message instead of looping redirects
+          document.getElementById("content").innerHTML = `
+            <div style="color: red; padding: 20px; text-align:center;">
+              <h2>Access Denied</h2>
+              <p>You are not authorized to access the admin dashboard.</p>
+              <button id="logoutBtn">Logout</button>
+            </div>
+          `;
+
+          // Attach logout handler
+          const logoutBtn = document.getElementById("logoutBtn");
+          if (logoutBtn) {
+            logoutBtn.addEventListener("click", async () => {
+              await signOut(auth);
+              window.location.href = LOGIN_PAGE; // e.g. "admin.html"
+            });
+          }
+
+          return; // stop here (no redirect loop)
         }
-    });
+
+        // ✅ Admin confirmed
+        console.log("✅ Authorization success: Admin confirmed");
+        setupUsersListener();
+        setupTransactionsListener();
+        attachTableListeners();
+
+        const adminNameEl = document.getElementById("admin-user-name");
+        if (adminNameEl) {
+          adminNameEl.textContent = `Welcome, Admin (${user.email})`;
+        }
+      } catch (error) {
+        console.error("🔥 Error checking admin role:", error);
+
+        // Fallback if Firestore check fails
+        document.getElementById("content").innerHTML = `
+          <div style="color: red; padding: 20px; text-align:center;">
+            <h2>System Error</h2>
+            <p>Could not verify admin privileges. Please try again later.</p>
+          </div>
+        `;
+      }
+    } else {
+      console.log("❌ No user logged in. Redirecting to login.");
+      window.location.href = LOGIN_PAGE; // e.g. "admin.html"
+    }
+  });
 }
 
 /* ===========================
