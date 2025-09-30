@@ -1,27 +1,29 @@
-// admin.js
+// assets/js/admin.js
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   signOut 
-} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import { 
   getFirestore, 
   doc, 
   getDoc 
-} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { app } from "../../firebase-config.js"; // adjust path if needed
+import { firebaseConfig } from "../../firebase-config.js"; 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-document.getElementById("admin-login-form").addEventListener("submit", async (e) => {
+document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("admin-email").value;
-  const password = document.getElementById("admin-password").value;
-  const errorDiv = document.getElementById("error-message");
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("adminPassword").value;
+  const errorDiv = document.getElementById("adminLoginError");
 
   errorDiv.textContent = ""; // clear old errors
 
@@ -29,15 +31,15 @@ document.getElementById("admin-login-form").addEventListener("submit", async (e)
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Check if user is in admins collection
+    // ✅ Check if user is in admins collection
     const adminRef = doc(db, "admins", user.uid);
     const adminSnap = await getDoc(adminRef);
 
     if (adminSnap.exists()) {
-      // ✅ Redirect to dashboard
+      // Redirect to admin dashboard
       window.location.href = "dashboard.html";
     } else {
-      // ❌ Not an admin, log them out
+      // ❌ Not an admin, sign out and show error
       await signOut(auth);
       errorDiv.textContent = "You are not authorized as an admin.";
     }
