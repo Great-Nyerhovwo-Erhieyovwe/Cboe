@@ -205,6 +205,7 @@ function updateDepositDisplay() {
   }
 }
 
+
 ///////////////////////////////
 // Real-time Firestore - user //
 ///////////////////////////////
