@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin | Dashboard</title>
-  <link rel="stylesheet" href="./assets/css/dashboard.css">
+  <link rel="stylesheet" href="./assets/css/admin-dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoE7cC5XWf3Zx+7P1d5u1M6+Zef3zq0n+d2Q=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -39,11 +39,11 @@
           document.body.classList.remove('loading');
         } else {
           console.warn("❌ Not an admin, redirecting...");
-          window.location.href = "./admin.html"; // adjust path
+          window.location.href = "admin-login.html"; // adjust path
         }
       } else {
         console.log("❌ No user signed in. Redirecting...");
-        window.location.href = "./admin.html";
+        window.location.href = "admin-login.html";
       }
     });
   </script>
@@ -154,7 +154,7 @@
 
     <div id="mobile-overlay" class="mobile-overlay hidden"></div>
   <script type="module" src="../firebase-config.js"></script>
-  <script type="module" src="../assets/js/dashboard.js"></script>
+  <script type="module" src="./assets/js/admin-dashboard.js"></script>
 
 </body>
 </html>

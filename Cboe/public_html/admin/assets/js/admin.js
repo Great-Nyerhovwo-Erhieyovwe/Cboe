@@ -37,7 +37,7 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
 
     if (adminSnap.exists()) {
       // Redirect to admin dashboard
-      window.location.href = "dashboard.html";
+      window.location.href = "./admin-dashboard.html";
     } else {
       // ❌ Not an admin, sign out and show error
       await signOut(auth);

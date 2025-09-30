@@ -27,7 +27,7 @@ const firebaseConfig = {
 };
 
 // CRITICAL PATH CHECK: Since dashboard.html and admin.html are in the same 'admin/' folder
-const LOGIN_PAGE = "admin.html"; // CORRECT path for this folder structure
+const LOGIN_PAGE = "./admin-login.html"; // CORRECT path for this folder structure
 const PUBLIC_USERS_COLLECTION = "users";
 const PUBLIC_TRANSACTIONS_COLLECTION = "transactions";
 const PUBLIC_MESSAGES_COLLECTION = "messages";

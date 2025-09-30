@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Transactions</title>
-  <link rel="stylesheet" href="./assets/css/dashboard.css" />
+  <link rel="stylesheet" href="./assets/css/admin-dashboard.css" />
 
   <!-- ✅ Font Awesome fixed -->
   <link
@@ -51,11 +51,11 @@
         } else {
           console.warn("Not an admin → redirecting.");
           await signOut(window.auth);
-          window.location.href = "../admin.html";
+          window.location.href = "admin-login.html";
         }
       } else {
         console.log("No user signed in → redirecting.");
-        window.location.href = "../admin.html";
+        window.location.href = "admin-login.html";
       }
     });
   </script>
@@ -78,7 +78,7 @@
       </div>
       <nav id="sidebar-menu">
         <ul>
-          <li><a href="dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+          <li><a href="admin-dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
           <li><a href="manage-users.html"><i class="fa-solid fa-user-gear"></i><span>Manage Users</span></a></li>
           <li><a href="transactions.html" class="active"><i class="fa-solid fa-wallet"></i><span>Transactions</span></a></li>
           <li><a href="wallet-settings.html" id="navWalletUpdate"><i class="fa-solid fa-qrcode"></i><span>Wallet Settings</span></a></li>
@@ -197,6 +197,6 @@
 
   <!-- ✅ Scripts in correct order -->
   <script type="module" src="../firebase-config.js"></script>
-  <script type="module" src="../assets/js/dashboard.js"></script>
+  <script type="module" src="./assets/js/admin-dashboard.js"></script>
 </body>
 </html>
