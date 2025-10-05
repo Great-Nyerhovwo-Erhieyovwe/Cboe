@@ -2,7 +2,7 @@
 
 // --- Configuration ---
 // The base URL for your running backend server (must match the port)
-const API_BASE_URL = 'http://localhost:3000/api'; 
+const API_BASE_URL = 'https://cboebackendapi.onrender.com/api'; 
 const ADMIN_DASHBOARD_PATH = './admin-dashboard.html';
 
 document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
