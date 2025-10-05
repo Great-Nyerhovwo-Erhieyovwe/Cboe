@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 🛑 REMOVED: const auth = window.auth; and const db = window.db; 
-    // These are no longer needed as database operations are server-side.
-
     // --- DOM Elements ---
     const form = document.getElementById('registrationForm');
     const fullNameInput = document.getElementById('fullName');
@@ -25,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalIcon = document.getElementById('modalIcon');
     const modalSpinner = document.getElementById('modalSpinner');
 
-    // Error elements
+    // Error elements (now targeted by the new error utilities)
     const fullNameError = document.getElementById('fullNameError');
     const usernameError = document.getElementById('usernameError');
     const emailError = document.getElementById('emailError');
@@ -42,10 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const strengthText = document.getElementById('strengthText');
     const psi = document.querySelector('.password-strength-indicator');
 
-    // 🔒 NEW: Prevent multiple submissions
+    // 🔒 Prevent multiple submissions
     let isSubmitting = false;
 
-    // 💬 Unified modal function
+    // 💬 Unified modal function (No changes needed)
     const showModal = (title, message, isError = true, showSpinner = false) => {
         if (modalTitle) modalTitle.textContent = title;
         if (modalMessage) modalMessage.textContent = message;
@@ -71,30 +68,55 @@ document.addEventListener('DOMContentLoaded', () => {
     window.onclick = (event) => {
         if (event.target === modal && modal) modal.style.display = "none";
     };
+    
+    // 🎨 NEW ERROR STYLE UTILITIES (Option 1 implemented, matching your HTML structure)
+    // Your HTML uses <div class="form-group"> as the reliable parent wrapper.
+    const findInputWrapper = (errorElement) => {
+        // Find the nearest parent with the class 'form-group'
+        return errorElement.closest('.form-group');
+    };
 
-    // Utility: Display error
-    const displayError = (element, message) => {
+    // Utility: Display error (Robust, non-adjacent sibling look-up)
+    const displayError = (element, message, isCheckbox = false) => {
         if (!element) return;
         element.textContent = message;
         element.style.display = 'block';
-        const input = element.previousElementSibling?.nextElementSibling || element.previousElementSibling;
-        if (input && (input.tagName === 'INPUT' || input.tagName === 'SELECT')) {
-            input.classList.add('invalid');
-            input.classList.remove('valid');
+
+        const wrapper = findInputWrapper(element);
+        if (wrapper) {
+            wrapper.classList.add('has-error'); // You need to define this class in your CSS
+            
+            // Only style the border of the primary input/select
+            if (!isCheckbox) {
+                const input = wrapper.querySelector('input:not([type="checkbox"]), select, textarea');
+                if (input) {
+                    input.classList.add('invalid');
+                    input.classList.remove('valid');
+                }
+            }
         }
     };
 
-    // Utility: Clear error
-    const clearError = (element) => {
+    // Utility: Clear error (Robust)
+    const clearError = (element, isCheckbox = false) => {
         if (!element) return;
         element.textContent = '';
         element.style.display = 'none';
-        const input = element.previousElementSibling?.nextElementSibling || element.previousElementSibling;
-        if (input && (input.tagName === 'INPUT' || input.tagName === 'SELECT')) {
-            input.classList.remove('invalid');
-            input.classList.add('valid');
+
+        const wrapper = findInputWrapper(element);
+        if (wrapper) {
+            wrapper.classList.remove('has-error');
+            
+            if (!isCheckbox) {
+                const input = wrapper.querySelector('input:not([type="checkbox"]), select, textarea');
+                if (input) {
+                    input.classList.remove('invalid');
+                    input.classList.add('valid');
+                }
+            }
         }
     };
+    // -----------------------------------------------------------------
 
     // --- Validation Functions ---
     const validateFullName = () => {
@@ -110,17 +132,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
     };
-
-    // ✅ UPDATED: Username availability check now uses Fetch API to query the server
-    const checkUsernameAvailability = async (username) => {
-        clearError(usernameError);
-        usernameSuggestions.innerHTML = '';
+    
+    // 🛑 REMOVED: checkUsernameAvailability function (No async check)
+    const validateUsername = () => {
+        const username = usernameInput.value.trim();
+        usernameFeedback.textContent = '';
         usernameSuggestions.style.display = 'none';
         usernameInput.classList.remove('valid', 'invalid');
 
         if (username === '') {
             displayError(usernameError, 'Username is required.');
-            usernameFeedback.textContent = '';
             return false;
         }
         if (username.length < 6) {
@@ -128,61 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
             usernameFeedback.textContent = 'Minimum 6 characters required.';
             return false;
         }
-
-        usernameFeedback.textContent = 'Checking availability...';
-        try {
-            // 🌐 Call the server endpoint to check username (Server handles the SQL query)
-            const response = await fetch('/api/check-username', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username })
-            });
-
-            const data = await response.json();
-
-            if (data.isAvailable) { // Server responds with { isAvailable: true }
-                usernameFeedback.textContent = 'Username available.';
-                usernameFeedback.classList.add('valid');
-                usernameInput.classList.add('valid');
-                return true;
-            } else {
-                displayError(usernameError, 'This username is already taken.');
-                usernameFeedback.textContent = 'Username taken.';
-                usernameInput.classList.add('invalid');
-
-                // Generate suggestions (still client-side for UX)
-                const base = username.replace(/\d+$/, '') || username;
-                const suggestions = [
-                    base + Math.floor(100 + Math.random() * 900),
-                    base + '_trader',
-                    base + '2025'
-                ].filter(s => s.length >= 6);
-
-                usernameSuggestions.innerHTML = '<strong>Suggestions:</strong>';
-                suggestions.forEach(s => {
-                    const li = document.createElement('li');
-                    li.textContent = s;
-                    li.style.padding = '4px 8px';
-                    li.style.cursor = 'pointer';
-                    li.style.borderRadius = '4px';
-                    li.onmouseover = () => li.style.backgroundColor = '#f0f0f0';
-                    li.onmouseout = () => li.style.backgroundColor = '';
-                    li.onclick = () => {
-                        usernameInput.value = s;
-                        usernameInput.dispatchEvent(new Event('input'));
-                    };
-                    usernameSuggestions.appendChild(li);
-                });
-                usernameSuggestions.style.display = 'block';
-                return false;
-            }
-        } catch (error) {
-            console.error("Username check error:", error);
-            displayError(usernameError, 'Error checking availability. Try again.');
-            usernameFeedback.textContent = '';
-            return false;
-        }
+        clearError(usernameError);
+        return true;
     };
+
 
     const validateEmail = () => {
         const email = emailInput.value.trim();
@@ -202,8 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const validatePhone = () => {
         const phone = phoneInput.value.trim();
         const phoneRegex = /^\+?[0-9]{7,15}$/;
+        // Check if field is optional or required before validating
+        if (phoneInput.required && phone === '') {
+             displayError(document.getElementById('phoneError'), 'Phone is required.');
+             phoneFeedback.textContent = '';
+             return false;
+        }
         if (phone === '') {
-            // Optional field, no error
             phoneFeedback.textContent = '';
             return true;
         }
@@ -217,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
     };
+    // (Password validation functions checkPasswordStrength, validatePassword, validateConfirmPassword remain unchanged)
 
     const checkPasswordStrength = (password) => {
         let strength = 0;
@@ -285,23 +261,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const validateTerms = () => {
         if (!termsCheckbox.checked) {
-            displayError(termsError, 'You must agree to the Terms and Conditions.');
+            displayError(termsError, 'You must agree to the Terms and Conditions.', true);
             return false;
         }
-        clearError(termsError);
+        clearError(termsError, true);
         return true;
     };
     
     const validateAgeAgreement = () => {
         if (!agreeCheckbox.checked) {
-            displayError(ageAgreementError, 'You must confirm your age and accept the Service Agreement.');
+            displayError(ageAgreementError, 'You must confirm your age and accept the Service Agreement.', true);
             return false;
         }
-        clearError(ageAgreementError);
+        clearError(ageAgreementError, true);
         return true;
     };
 
-    // ✅ REAL-TIME VALIDATION (as user types)
+    // --- Event Listeners ---
+    // All inputs now use the updated display/clearError functions.
     fullNameInput.addEventListener('input', validateFullName);
     emailInput.addEventListener('input', validateEmail);
     phoneInput.addEventListener('input', validatePhone);
@@ -313,32 +290,21 @@ document.addEventListener('DOMContentLoaded', () => {
     termsCheckbox.addEventListener('change', validateTerms);
     agreeCheckbox.addEventListener('change', validateAgeAgreement);
 
-    // ✅ VALIDATION ON FOCUS LOSS (blur)
+    // VALIDATION ON FOCUS LOSS (blur)
     fullNameInput.addEventListener('blur', validateFullName);
     emailInput.addEventListener('blur', validateEmail);
     phoneInput.addEventListener('blur', validatePhone);
     passwordInput.addEventListener('blur', validatePassword);
     confirmPasswordInput.addEventListener('blur', validateConfirmPassword);
-    usernameInput.addEventListener('blur', () => {
-        if (usernameInput.value.trim()) {
-            checkUsernameAvailability(usernameInput.value.trim());
-        }
-    });
+    
+    // 🛑 USERNAME CHECK: Only run synchronous validation on blur/input.
+    usernameInput.addEventListener('blur', validateUsername);
+    usernameInput.addEventListener('input', validateUsername);
+    
+    // 🛑 CLEANUP: Remove unused elements which were for real-time check/suggestions
+    if (usernameSuggestions) usernameSuggestions.style.display = 'none';
 
-    // ✅ USERNAME INPUT (real-time)
-    usernameInput.addEventListener('input', () => {
-        const value = usernameInput.value.trim();
-        if (value.length > 0) {
-            // Add a small delay for debounce in a real app
-            checkUsernameAvailability(value);
-        } else {
-            clearError(usernameError);
-            usernameFeedback.textContent = '';
-            usernameSuggestions.style.display = 'none';
-        }
-    });
-
-    // ✅ FORM SUBMISSION (updated to use FETCH to talk to the SQL server API)
+    // --- FORM SUBMISSION (No async check before submission) ---
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -346,8 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSubmitting) return;
         isSubmitting = true;
 
-        // Run synchronous validations first
+        // Run all synchronous validations
         const isFullNameValid = validateFullName();
+        const isUsernameValid = validateUsername(); // Now synchronous
         const isEmailValid = validateEmail();
         const isPhoneValid = validatePhone();
         const isPasswordValid = validatePassword();
@@ -355,20 +322,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const isTermsValid = validateTerms();
         const isAgeAgreementValid = validateAgeAgreement();
 
-        if (!isFullNameValid || !isEmailValid || !isPhoneValid || 
+        if (!isFullNameValid || !isUsernameValid || !isEmailValid || !isPhoneValid || 
             !isPasswordValid || !isConfirmPasswordValid || 
             !isTermsValid || !isAgeAgreementValid) {
             isSubmitting = false;
             showModal('Validation Error', 'Please correct all form errors.', true);
             return;
         }
-
-        // Check username (async)
-        const isUsernameAvailable = await checkUsernameAvailability(usernameInput.value.trim());
-        if (!isUsernameAvailable) {
-            isSubmitting = false;
-            return; // Error already shown
-        }
+        // 🛑 REMOVED: await checkUsernameAvailability(...) call here.
 
         // --- Prepare Data for Server ---
         const registrationData = {
@@ -376,11 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
             username: usernameInput.value.trim(),
             email: emailInput.value.trim(),
             phone: phoneInput.value.trim(),
-            password: passwordInput.value, // Send plain password for server to hash
+            password: passwordInput.value, 
             accountType: accountTypeInput.value,
             country: countryInput.value,
             currency: currencyInput.value,
-            // Only send confirmation of agreement, as server can't read checkbox state directly
             agreedToTerms: termsCheckbox.checked, 
             ageAgreed: agreeCheckbox.checked 
         };
@@ -400,22 +360,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                // HTTP 200-299 status code means success
+                // Success
                 showModal('Registration Successful', `Welcome, ${registrationData.username}! Redirecting to login...`, false);
                 form.reset();
                 setTimeout(() => {
                     window.location.href = "../login/login.html";
                 }, 2000);
             } else {
-                // Server responded with an error (e.g., 400 Bad Request, 500 Server Error)
+                // Server responded with an error (e.g., 400, 409, 500)
                 let errorMessage = result.message || "An unexpected error occurred during registration.";
 
-                // Example: Handle specific server-side errors
+                // 🔑 NEW: Handle specific server-side errors
                 if (result.errorType === 'EMAIL_TAKEN') {
                     errorMessage = 'This email is already registered. Please log in.';
+                    displayError(emailError, errorMessage);
                 } else if (result.errorType === 'USERNAME_TAKEN') {
-                    errorMessage = 'This username is already registered.';
-                    // You might want to re-run suggestions here
+                    // 🔑 Display the error message right next to the username field
+                    errorMessage = 'This username is already taken. Please choose a different one.';
+                    displayError(usernameError, errorMessage); 
                 }
                 
                 showModal('Registration Failed', errorMessage, true);
