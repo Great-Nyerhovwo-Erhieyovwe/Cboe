@@ -16,20 +16,6 @@
       <div id="adminLoginError" class="error-msg"></div>
     </form>
   </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { firebaseConfig } from "../firebase-config.js"; // adjust path
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Make Firebase available globally if admin.js needs it
-    window.firebaseApp = app;
-    window.auth = auth;
-  </script>
-
-  <script type="module" src="../assets/js/admin.js"></script>
+  <script src="../assets/js/admin.js"></script>
 </body>
 </html>

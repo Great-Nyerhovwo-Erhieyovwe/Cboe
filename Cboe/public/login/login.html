@@ -5,33 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cboe | Login</title>
     <link rel="stylesheet" href="../assets/css/login.css">
-    <!-- ✅ FIXED: Removed trailing spaces in CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <!-- ✅ FIXED: Use GLOBAL Firebase SDK (NOT modules) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script>
-        // Initialize Firebase globally
-        const firebaseConfig = {
-            apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-            authDomain: "cboefirebaseserver.firebaseapp.com",
-            databaseURL: "https://cboefirebaseserver-default-rtdb.firebaseio.com", // ✅ Removed trailing spaces
-            projectId: "cboefirebaseserver",
-            storageBucket: "cboefirebaseserver.firebasestorage.app",
-            messagingSenderId: "755491003217",
-            appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
-        };
-        firebase.initializeApp(firebaseConfig);
-        window.auth = firebase.auth();
-        window.db = firebase.firestore();
-    </script>
-</head>
+    </head>
 <body>
     <div class="container">
         <h2>Log in your account</h2>
-        <form action="" id="loginForm">
+        <form action="/api/login" method="POST" id="loginForm"> 
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" placeholder="Enter your email address" required>
@@ -71,7 +51,6 @@
         </div>
     </div>
 
-    <!-- ✅ FIXED: Load as global script (NOT module) -->
     <script src="../assets/js/login.js"></script>
 </body>
 </html>

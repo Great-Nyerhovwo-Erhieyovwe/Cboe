@@ -1,18 +1,6 @@
-// dashboard.js - FIXED VERSION with robust wallet config handling
-// Requirements:
-//  - Make sure Firebase is initialized and exposes `window.db` (Firestore) and `window.auth` (Auth)
-//  - Load this file as a module and after Firebase initialization (or use defer and initialize firebase earlier)
-
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  limit,
-  addDoc,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// dashboard.js - SQL BACKEND VERSION (Using Fetch API for Data Access)
+// This file assumes user authentication (e.g., JWT token or session cookie) is handled
+// by the server and is automatically included in fetch requests.
 
 //////////////////////
 // Helper utilities //
@@ -24,27 +12,27 @@ function showPopup(message, isSuccess = true) {
     popupContainer = document.createElement('div');
     popupContainer.id = 'popupContainer';
     popupContainer.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 10000;
-      max-width: 320px;
-    `;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 320px;
+        `;
     document.body.appendChild(popupContainer);
   }
 
   const popup = document.createElement('div');
   popup.textContent = message;
   popup.style.cssText = `
-    background-color: ${isSuccess ? '#4CAF50' : '#f44336'};
-    color: white;
-    padding: 10px 16px;
-    margin-top: 10px;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    opacity: 1;
-    transition: opacity 0.5s ease-out;
-  `;
+        background-color: ${isSuccess ? '#4CAF50' : '#f44336'};
+        color: white;
+        padding: 10px 16px;
+        margin-top: 10px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+    `;
   popupContainer.prepend(popup);
   setTimeout(() => {
     popup.style.opacity = '0';
@@ -59,12 +47,16 @@ function formatUSD(amount) {
 //////////////////////
 // Application state //
 //////////////////////
-let db = null;
-let auth = null;
+// 🛑 REMOVED: db and auth. We rely on the server session and fetch.
 let userProfile = {};
 let currentUserId = null;
 let notifiedTransactionIds = new Set();
 let WALLET_CONFIG = {};
+
+// Polling intervals
+let userPollingInterval = null;
+let txPollingInterval = null;
+const POLLING_RATE_MS = 10000; // Poll every 10 seconds
 
 ///////////////////////////
 // DOM references holder //
@@ -72,7 +64,7 @@ let WALLET_CONFIG = {};
 const DOM = {}; // we'll populate inside DOMContentLoaded
 
 /////////////////////////////////////////
-// Firestore / wallet config functions //
+// API / wallet config functions //
 /////////////////////////////////////////
 
 // --- Utility: normalize a key for tolerant matching ---
@@ -99,23 +91,21 @@ function findNetworkKey(networksObj, networkRequested) {
   return Object.keys(networksObj)[0] || null;
 }
 
-// Fetch wallet config from Firestore
+// 🌐 UPDATED: Fetch wallet config from server API
 async function fetchWalletConfig() {
-  if (!db) return;
   try {
-    const docRef = doc(db, "config", "wallet");
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists && docSnap.exists()) {
-      WALLET_CONFIG = docSnap.data() || {};
-      console.debug("Wallet config loaded:", WALLET_CONFIG);
-      updateNetworkOptions();
-    } else {
-      WALLET_CONFIG = {};
-      console.warn("Wallet config not found.");
-      updateNetworkOptions();
+    const response = await fetch('/api/config/wallet');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    const configData = await response.json();
+    WALLET_CONFIG = configData || {};
+    console.debug("Wallet config loaded:", WALLET_CONFIG);
+    updateNetworkOptions();
   } catch (error) {
+    WALLET_CONFIG = {};
     console.error("Wallet config error:", error);
+    updateNetworkOptions();
   }
 }
 
@@ -189,10 +179,9 @@ function updateDepositDisplay() {
   const networkKey = coinKey ? findNetworkKey(WALLET_CONFIG[coinKey], selectedNetwork) : null;
   const data = (coinKey && networkKey) ? (WALLET_CONFIG[coinKey]?.[networkKey]) : null;
 
-  console.debug("updateDepositDisplay:", { selectedCoin, coinKey, selectedNetwork, networkKey, data });
-
   if (data && data.address) {
     walletAddressDisplay.textContent = data.address;
+    // 🛑 NOTE: QR code path must now be a public URL accessible by the client
     if (data.qr_path) {
       qrCodeImage.src = data.qr_path;
       if (qrCodeImage.parentElement) qrCodeImage.parentElement.style.display = '';
@@ -207,96 +196,129 @@ function updateDepositDisplay() {
 
 
 ///////////////////////////////
-// Real-time Firestore - user //
+// 🌐 Data Polling - User Profile //
 ///////////////////////////////
-function startUserListener(uid) {
-  if (!db || !uid) return () => {};
-  const userDocRef = doc(db, "users", uid);
-  return onSnapshot(userDocRef, (docSnap) => {
-    if (!docSnap.exists()) {
-      console.error('User document missing');
+async function fetchUserProfile() {
+  try {
+    // 🌐 Call server to get user data for the current session
+    const response = await fetch('/api/user/profile');
+    if (response.status === 401) {
+      // Unauthorized or session expired
+      window.location.href = '../login/login.html';
       return;
     }
-    userProfile = docSnap.data() || {};
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const userData = await response.json();
+    userProfile = userData || {};
 
     // Ban check
     if (userProfile.isBanned === true) {
-      window.handleLogout?.();
+      // Assuming window.handleLogout() or similar redirects to login page
+      console.error('Account Banned. Logging out.');
+      // This requires a server-side logout call to clear the session/token
+      fetch('/api/logout', { method: 'POST' });
+      window.location.href = '../login/login.html';
       return;
     }
 
     // Update UI safely
     if (DOM.profileName) {
-      const displayName = userProfile.username || (auth?.currentUser?.email) || 'User';
+      const displayName = userProfile.username || userProfile.email || 'User';
       DOM.profileName.textContent = `Welcome, ${displayName}`;
     }
+    // Safely update all dashboard cards
     if (DOM.balanceAmount) DOM.balanceAmount.textContent = formatUSD(userProfile.balance);
     if (DOM.roi) DOM.roi.textContent = formatUSD(userProfile.roi);
     if (DOM.initialInvestment) DOM.initialInvestment.textContent = formatUSD(userProfile.activeTrades);
     if (DOM.activeDeposit) DOM.activeDeposit.textContent = `${userProfile.deposits || 0} active deposits`;
-  }, (error) => {
-    console.error("User data error:", error);
-  });
+
+  } catch (error) {
+    console.error("User data fetch error:", error);
+  }
+}
+
+function startUserPolling() {
+  // Initial fetch
+  fetchUserProfile();
+  // Start polling interval
+  if (userPollingInterval) clearInterval(userPollingInterval);
+  userPollingInterval = setInterval(fetchUserProfile, POLLING_RATE_MS);
 }
 
 /////////////////////////////////////
-// Real-time Firestore - transactions
+// 🌐 Data Polling - Transactions //
 /////////////////////////////////////
-function startTransactionsListener(uid) {
-  if (!db || !uid || !DOM.transactionList) return () => {};
-  // restore notified IDs from localStorage
+async function fetchTransactions() {
+  if (!DOM.transactionList) return;
+
+  // 🌐 Call server to get user transactions
   try {
-    const stored = localStorage.getItem(`notifiedTransactions_${uid}`);
-    if (stored) notifiedTransactionIds = new Set(JSON.parse(stored));
-  } catch (e) {
-    console.error("Notified TX parse error:", e);
-  }
+    const response = await fetch('/api/transactions/latest'); // Server returns transactions for current user
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  const q = query(
-    collection(db, "transactions"),
-    where("userId", "==", uid),
-    limit(20)
-  );
+    const transactions = await response.json() || [];
 
-  return onSnapshot(q, (querySnapshot) => {
-    const transactions = [];
-    querySnapshot.forEach(d => {
-      transactions.push({ id: d.id, ...(d.data() || {}) });
-    });
+    // restore notified IDs from localStorage
+    const userId = userProfile.id; // Assuming user ID is available in userProfile
+    if (userId) {
+      try {
+        const stored = localStorage.getItem(`notifiedTransactions_${userId}`);
+        if (stored) notifiedTransactionIds = new Set(JSON.parse(stored));
+      } catch (e) {
+        console.error("Notified TX parse error:", e);
+      }
+    }
 
     // notify approved/declined txs not yet seen
     transactions.forEach(tx => {
+      // Note: SQL dates come as ISO strings, not Firebase Timestamp objects
+      const txId = tx.id; // Assuming the server returns an 'id' for the transaction
       if (
         (tx.status === 'approved' || tx.status === 'declined') &&
-        !notifiedTransactionIds.has(tx.id)
+        !notifiedTransactionIds.has(txId)
       ) {
         const action = (tx.type || '').charAt(0).toUpperCase() + (tx.type || '').slice(1);
         const isSuccess = tx.status === 'approved';
         showPopup(`${action} of ${formatUSD(tx.amount)} was ${isSuccess ? 'approved ✅' : 'declined ❌'}`, isSuccess);
-        notifiedTransactionIds.add(tx.id);
-        localStorage.setItem(`notifiedTransactions_${uid}`, JSON.stringify([...notifiedTransactionIds]));
+        notifiedTransactionIds.add(txId);
+        // Save updated set to localStorage
+        if (userId) {
+          localStorage.setItem(`notifiedTransactions_${userId}`, JSON.stringify([...notifiedTransactionIds]));
+        }
       }
     });
 
-    // render latest 5 sorted by createdAt (best-effort)
+    // render latest 5 sorted by createdAt
     DOM.transactionList.innerHTML = '';
     transactions
-      .sort((a, b) => {
-        const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-        const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-        return bTime - aTime;
-      })
+      // Server should ideally sort this, but sorting client-side for robustness
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 5)
       .forEach(tx => {
         const li = document.createElement('li');
-        const date = tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleString() : (tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'N/A');
+        // Use ISO date string directly
+        const date = tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'N/A';
         li.textContent = `${date}: ${tx.type} of ${formatUSD(tx.amount)} — Status: ${tx.status || 'N/A'}`;
         DOM.transactionList.appendChild(li);
       });
-  }, (error) => {
-    console.error("Transactions error:", error);
-  });
+  } catch (error) {
+    console.error("Transactions fetch error:", error);
+  }
 }
+
+function startTransactionsPolling() {
+  // Initial fetch
+  fetchTransactions();
+  // Start polling interval
+  if (txPollingInterval) clearInterval(txPollingInterval);
+  txPollingInterval = setInterval(fetchTransactions, POLLING_RATE_MS);
+}
+
 
 /////////////////
 // Modal logic //
@@ -328,16 +350,10 @@ function clearInputs(modal) {
 }
 
 /////////////////////////
-// Deposit / Withdraw //
+// 🌐 Deposit / Withdraw //
 /////////////////////////
 async function handleDepositSubmit(e) {
   e?.preventDefault?.();
-  if (!auth) return alert("Auth not ready");
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    alert("Session expired. Please log in again.");
-    return;
-  }
 
   if (userProfile.isFrozen) {
     if (DOM.statusAdd) {
@@ -348,38 +364,54 @@ async function handleDepositSubmit(e) {
   }
 
   const amount = parseFloat(DOM.addAmount.value);
+  const selectedCoin = DOM.coinType?.value;
+  const selectedNetwork = DOM.networkType?.value;
+
   if (isNaN(amount) || amount <= 0) {
     if (DOM.statusAdd) { DOM.statusAdd.textContent = " ! Enter valid amount."; DOM.statusAdd.style.color = 'red'; }
+    return;
+  }
+  if (!selectedCoin || !selectedNetwork) {
+    if (DOM.statusAdd) { DOM.statusAdd.textContent = " ! Select coin and network."; DOM.statusAdd.style.color = 'red'; }
     return;
   }
 
   if (DOM.statusAdd) { DOM.statusAdd.textContent = " ⏳ Submitting..."; DOM.statusAdd.style.color = 'black'; }
 
   try {
-    await addDoc(collection(db, "transactions"), {
-      userId: currentUser.uid,
-      type: 'deposit',
-      amount: amount,
-      status: 'pending',
-      createdAt: new Date()
+    // 🌐 Call server API to create a pending deposit transaction
+    const response = await fetch('/api/transactions/deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: amount,
+        coin: selectedCoin,
+        network: selectedNetwork
+      })
     });
-    if (DOM.statusAdd) { DOM.statusAdd.textContent = " ✅ Request submitted!"; DOM.statusAdd.style.color = 'green'; }
-    setTimeout(() => closeModal(DOM.addModal), 1200);
-    showPopup(`Deposit of ${formatUSD(amount)} submitted.`, true);
+
+    const result = await response.json();
+
+    if (response.ok) {
+      if (DOM.statusAdd) { DOM.statusAdd.textContent = " ✅ Request submitted! Waiting for deposit."; DOM.statusAdd.style.color = 'green'; }
+      setTimeout(() => closeModal(DOM.addModal), 2500);
+      showPopup(`Deposit of ${formatUSD(amount)} submitted.`, true);
+      fetchTransactions(); // Refresh list immediately
+    } else {
+      // Server error message
+      throw new Error(result.message || 'Submission failed');
+    }
   } catch (err) {
     console.error("Deposit error:", err);
     if (DOM.statusAdd) { DOM.statusAdd.textContent = '❌ ' + (err.message || 'Submission failed'); DOM.statusAdd.style.color = 'red'; }
+  } finally {
+    // Ensure inputs are cleared on submission failure/success
+    DOM.addAmount.value = '';
   }
 }
 
 async function handleWithdrawSubmit(e) {
   e?.preventDefault?.();
-  if (!auth) return alert("Auth not ready");
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    alert("Session expired. Please log in again.");
-    return;
-  }
 
   if (userProfile.isFrozen) {
     if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = '❌ Transactions are frozen by admin.'; DOM.statusWithdraw.style.color = 'red'; }
@@ -398,6 +430,7 @@ async function handleWithdrawSubmit(e) {
     if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ! Enter valid amount."; DOM.statusWithdraw.style.color = 'red'; }
     return;
   }
+  // Client-side balance check (Server must perform final, authoritative check)
   if (amount > (userProfile.balance || 0)) {
     if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ! Insufficient balance."; DOM.statusWithdraw.style.color = 'red'; }
     return;
@@ -406,26 +439,42 @@ async function handleWithdrawSubmit(e) {
   if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ⏳ Submitting..."; DOM.statusWithdraw.style.color = 'black'; }
 
   try {
-    await addDoc(collection(db, "transactions"), {
-      userId: currentUser.uid,
-      type: 'withdrawal',
-      amount: amount,
-      walletAddress: walletAddress,
-      status: 'pending',
-      createdAt: new Date()
+    // 🌐 Call server API to create a pending withdrawal transaction
+    const response = await fetch('/api/transactions/withdrawal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: amount,
+        walletAddress: walletAddress
+        // You might need to add coin/network selected in the form here too
+      })
     });
-    if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ✅ Request submitted!"; DOM.statusWithdraw.style.color = 'green'; }
-    setTimeout(() => closeModal(DOM.withdrawModal), 1200);
-    showPopup(`Withdrawal of ${formatUSD(amount)} submitted.`, true);
+
+    const result = await response.json();
+
+    if (response.ok) {
+      if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = " ✅ Request submitted!"; DOM.statusWithdraw.style.color = 'green'; }
+      setTimeout(() => closeModal(DOM.withdrawModal), 1200);
+      showPopup(`Withdrawal of ${formatUSD(amount)} submitted.`, true);
+      fetchTransactions(); // Refresh list immediately
+    } else {
+      // Server error message (e.g., insufficient funds check failed on server)
+      throw new Error(result.message || 'Submission failed');
+    }
   } catch (err) {
     console.error("Withdraw error:", err);
     if (DOM.statusWithdraw) { DOM.statusWithdraw.textContent = '❌ ' + (err.message || 'Submission failed'); DOM.statusWithdraw.style.color = 'red'; }
+  } finally {
+    // Ensure inputs are cleared on submission failure/success
+    DOM.withdrawAmount.value = '';
+    walletInput.value = '';
   }
 }
 
 //////////////////////
 // TradingView init //
 //////////////////////
+// (No change needed - this is a third-party script and doesn't rely on the backend type)
 function initTradingView() {
   const container = document.getElementById("tradingview_eurusd");
   if (!container) return;
@@ -485,6 +534,7 @@ function initTradingView() {
 ////////////////////
 // Chart.js init //
 ////////////////////
+// (No change needed - this uses static data, not backend data)
 function initChart() {
   const canvas = document.getElementById('analyticsChart');
   if (!canvas) return;
@@ -495,7 +545,7 @@ function initChart() {
     try { window.dashboardChart.destroy(); } catch (e) { /* ignore */ }
   }
 
-  const labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const dataPoints = [3000, 2200, 2700, 1800, 1900, 2500, 4000, 3200, 1600, 3722, 2900, 3500];
 
   window.dashboardChart = new Chart(ctx, {
@@ -546,6 +596,7 @@ function initChart() {
 ///////////////
 // UI / events
 ///////////////
+// (No change needed - this is all UI logic)
 function initUI() {
   // Theme toggle
   if (DOM.themeToggle && DOM.themeIcon) {
@@ -628,6 +679,7 @@ function initUI() {
 /////////////////////
 // Wire up handlers
 /////////////////////
+// (No change needed - this is pure DOM wiring)
 function wireModalButtons() {
   if (DOM.openAddBtn && DOM.addModal) {
     DOM.openAddBtn.addEventListener('click', () => {
@@ -667,15 +719,7 @@ function wireModalButtons() {
 // App initialization //
 //////////////////////////
 document.addEventListener("DOMContentLoaded", () => {
-  // Ensure firebase objects are available on window
-  db = window.db;
-  auth = window.auth;
-
-  if (!db || !auth) {
-    console.error("Firebase not initialized. Check HTML script (window.db/window.auth).");
-    alert("System error. Please refresh the page.");
-    return;
-  }
+  // 🛑 REMOVED: Initialization of db and auth
 
   // Query DOM once DOM is ready (prevents null refs)
   DOM.profileName = document.getElementById('profileName');
@@ -713,34 +757,25 @@ document.addEventListener("DOMContentLoaded", () => {
   DOM.dropdownMenu = DOM.profileDropdown ? DOM.profileDropdown.querySelector(".dropdown-menu") : null;
   DOM.dashboardContainer = document.getElementById("dashboard-container");
 
-  // create popup container
-  showPopup("Dashboard loaded (debug) — popup system active", true);
+  // Before production deployment, change the debug message:
+  // showPopup("Dashboard loaded (debug) — popup system active", true); 
+  showPopup(`Welcome, ${userProfile.username || 'User'}!`, true);
 
   initUI();
   initTradingView();
   initChart();
+
+  // Start initial setup
   fetchWalletConfig();
   wireModalButtons();
 
-  // Only start listeners once auth state is known
-  let unsubUser = null, unsubTx = null;
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      currentUserId = user.uid;
-      // start realtime listeners
-      unsubUser = startUserListener(currentUserId);
-      unsubTx = startTransactionsListener(currentUserId);
-    } else {
-      // cleanup if logged out
-      currentUserId = null;
-      userProfile = {};
-      if (unsubUser) unsubUser();
-      if (unsubTx) unsubTx();
-    }
-  });
+  // 🌐 Start continuous data fetching (polling)
+  startUserPolling();
+  startTransactionsPolling();
 
   window.addEventListener('beforeunload', () => {
-    if (unsubUser) unsubUser();
-    if (unsubTx) unsubTx();
+    // Clear polling intervals on page close/navigate
+    if (userPollingInterval) clearInterval(userPollingInterval);
+    if (txPollingInterval) clearInterval(txPollingInterval);
   });
 });

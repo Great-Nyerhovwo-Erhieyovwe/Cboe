@@ -2,5 +2,6 @@ Dashboard2
 
 node_modules
 .env
-
+firebase-config.js
+db.json
 Admin2

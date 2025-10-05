@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Dashboard</title>
+    <link rel="stylesheet" href="./assets/css/admin-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoE7cC5XWf3Zx+7P1d5u1M6+Zef3zq0n+d2Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .input-group input, .input-group textarea {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-row input {
+            flex-grow: 1;
+        }
+
+        /* message box */
+        #message-box {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .msg-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .msg-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .msg-info {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        /* User data display */
+        .user-data-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .user-data-field label {
+            text-transform: capitalize;
+            font-weight: normal;
+        }
+
+        .user-data-field input {
+            text-align: right;
+            border: 1px solid #ddd;
+            padding: 5px;
+            margin: 0 10px;
+            width: 150px;
+        }
+
+        .user-id-display {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body class="light-mode loading">
+    <div id="dashboard-container">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h2>Cboe</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+                    <li><a href="manage-users.html"><i class="fa-solid fa-tools"></i><span>Manage User</span></a></li>
+                    <li><a href="wallet-settings.html" class="active"><i class="fa-solid fa-tools"></i><span>Manage
+                                Wallet</span></a></li>
+                    <li><a href="transaction.html"><i class="fa-solid fa-trend-up"></i><span>Transactions</span></a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="theme-toggle" class="sidebar-btn">
+                    <i class="fas fa-moon"></i><span>Toggle Theme</span>
+                </button>
+                <button id="logout-btn" class="sidebar-btn profile-sidebar-btn"> <i
+                        class="fa-solid fa-sign-out-alt"></i><span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <div id="main-content">
+            <header id="navbar" class="navbar">
+                <div class="navbar-left">
+                    <button id="sidebar-toggle" class="hamburger-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <span class="company-name">Cboe Admin</span>
+                </div>
+
+                <div class="navbar-right">
+                    <div id="nav-notification">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+
+                    <div id="profile-dropdown" class="profile-container">
+                        <div class="profile-info">
+                            <span class="user-name" id="admin-user-name">Welcome, Admin</span>
+                            <img src="https://via.placeholder.com/40" alt="avatar" class="profile-avatar">
+                        </div>
+                        <div class="dropdown-menu hidden">
+                            <a href="#" id="dropdown-settings">Settings</a>
+                            <a href="#" id="dropdown-logout">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content">
+                <h3 id="page-title">Admin Dashboard</h3>
+
+                <div id="message-box" class="hidden" role="alert"></div>
+
+                <div class="card">
+                    <h2 class="section-title">1. Global Platform Settings (Wallet & ROI)</h2>
+
+                    <form id="global-settings-form">
+                        <div class="input-group">
+                            <label for="deposit-address">Deposit Wallet Address</label>
+                            <input type="text" id="deposit-address" placeholder="e.g., bc1qxy21j..." required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="qr-code-url">Deposit QR Code URL</label>
+                            <input type="url" name="qr-code-url" id="qr-code-url"
+                                placeholder="Paste URL(e.g., https://i.imgur.com/qrcode.png)">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="roi-rate">Default ROI Rate(e.g., 0.05 for 5%)</label>
+                            <input type="number" step="0.001" min="0" name="roi-rate" id="roi-rate" placeholder="e.g., 0.05" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Update Global Settings</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">2. Individual User Management</h2>
+
+                    <div class="input-group flex-row">
+                        <input type="text" id="user-id-input" placeholder="Enter User ID" required>
+                        <button id="fetch-user-btn" class="btn-primary">Fetch User Data</button>
+                    </div>
+
+                    <p id="user-fetch-status" style="text-align: center; color: #555; margin-top: 15px;"></p>
+
+                    <div id="user-info-area" style="margin-top: 25px; display: none;">
+                        <p style="font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">Target User ID: <span id="display-user-id" class="user-id-display"></span></p>
+
+                        <h3 style="font-size: 1.3em; margin-top: 20px; margin-bottom: 10px;">User Financial Summary(Summary Balances)</h3>
+                        <div id="user-fields-container"></div>
+
+                        <h3 style="font-size: 1.3em; margin-top: 25px; margin-bottom: 10px;">Transaction Records</h3>
+                        <div id="transactions-container">
+                            <p style="color: #999;">Fetch a user to view transactions...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="mobile-overlay" class="mobile-overlay hidden"></div>
+    <script src="./assets/js/admin-dashboard.js"></script>
+</body>
+
+</html>

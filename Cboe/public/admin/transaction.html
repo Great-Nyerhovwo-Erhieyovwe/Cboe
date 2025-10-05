@@ -8,66 +8,10 @@
   <link rel="stylesheet" href="./assets/css/admin-dashboard.css" />
 
   <!-- ✅ Font Awesome fixed -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
     integrity="sha512-pO12rT+DcL5n3ePxx5hR2TFWReS+UxZ35uR9Y9Af8HzlxVfKfFQ8eOi5GK3nLkAfiL0+6Bz/J6E4jqG4lgFj1g=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // ✅ Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-      authDomain: "cboefirebaseserver.firebaseapp.com",
-      projectId: "cboefirebaseserver",
-      storageBucket: "cboefirebaseserver.firebasestorage.app",
-      messagingSenderId: "755491003217",
-      appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-      measurementId: "G-FCZEERNC06",
-    };
-
-    // ✅ Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    window.auth = getAuth(app);
-    window.db = getFirestore(app);
-
-    // ✅ Admin auth check
-    onAuthStateChanged(window.auth, async (user) => {
-      if (user) {
-        window.currentUser = user;
-
-        const userDocRef = doc(window.db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        if (docSnap.exists() && docSnap.data().isAdmin === true) {
-          console.log("Admin authenticated → transactions page loaded.");
-          document.body.classList.remove("loading");
-        } else {
-          console.warn("Not an admin → redirecting.");
-          await signOut(window.auth);
-          window.location.href = "admin-login.html";
-        }
-      } else {
-        console.log("No user signed in → redirecting.");
-        window.location.href = "admin-login.html";
-      }
-    });
-  </script>
-
-  <style>
-    .loading #dashboard-container {
-      display: none;
-    }
-    .light-mode {
-      background-color: #f4f7f6;
-    }
-  </style>
 </head>
 
 <body class="light-mode loading">
@@ -80,8 +24,9 @@
         <ul>
           <li><a href="admin-dashboard.html"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
           <li><a href="manage-users.html"><i class="fa-solid fa-user-gear"></i><span>Manage Users</span></a></li>
-          <li><a href="transactions.html" class="active"><i class="fa-solid fa-wallet"></i><span>Transactions</span></a></li>
-          <li><a href="wallet-settings.html" id="navWalletUpdate"><i class="fa-solid fa-qrcode"></i><span>Wallet Settings</span></a></li>
+          <li><a href="wallet-settings.html"><i class="fa-solid fa-user-gear"></i><span>Manage Wallet</span></a></li>
+          <li><a href="transaction.html" class="active"><i class="fa-solid fa-wallet"></i><span>Transactions</span></a>
+          </li>
         </ul>
       </nav>
       <div class="sidebar-footer">
@@ -152,7 +97,9 @@
                 </tr>
               </thead>
               <tbody id="transactions-table-body">
-                <tr><td colspan="7" style="text-align: center;">Loading transactions...</td></tr>
+                <tr>
+                  <td colspan="7" style="text-align: center;">Loading transactions...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -196,7 +143,7 @@
   <div id="mobile-overlay" class="mobile-overlay hidden"></div>
 
   <!-- ✅ Scripts in correct order -->
-  <script type="module" src="../firebase-config.js"></script>
-  <script type="module" src="./assets/js/admin-dashboard.js"></script>
+  <script src="./assets/js/admin-dashboard.js"></script>
 </body>
+
 </html>

@@ -1,59 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin | Dashboard</title>
-  <link rel="stylesheet" href="./assets/css/admin-dashboard.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoE7cC5XWf3Zx+7P1d5u1M6+Zef3zq0n+d2Q=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = { 
-      apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-      authDomain: "cboefirebaseserver.firebaseapp.com",
-      projectId: "cboefirebaseserver",
-      storageBucket: "cboefirebaseserver.firebasestorage.app",
-      messagingSenderId: "755491003217",
-      appId: "1:755491003217:web:2a10ffad1f38c9942f5170",
-      measurementId: "G-FCZEERNC06"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    window.auth = getAuth(app);
-    window.db = getFirestore(app);
-
-    // ✅ Only allow admins
-    onAuthStateChanged(window.auth, async (user) => {
-      if (user) {
-        const adminDocRef = doc(window.db, "admins", user.uid);
-        const adminSnap = await getDoc(adminDocRef);
-
-        if (adminSnap.exists()) {
-          console.log("✅ Admin user authenticated");
-          document.body.classList.remove('loading');
-        } else {
-          console.warn("❌ Not an admin, redirecting...");
-          window.location.href = "admin-login.html"; // adjust path
-        }
-      } else {
-        console.log("❌ No user signed in. Redirecting...");
-        window.location.href = "admin-login.html";
-      }
-    });
-  </script>
-    <style>
-        .loading #dashboard-container { display: none; }
-        .light-mode { background-color: #f4f7f6; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Dashboard</title>
+    <link rel="stylesheet" href="./assets/css/admin-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoE7cC5XWf3Zx+7P1d5u1M6+Zef3zq0n+d2Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
-<body class="light-mode loading"> <div id="dashboard-container">
+<body class="light-mode loading">
+    <div id="dashboard-container">
         <aside id="sidebar">
             <div class="sidebar-header">
                 <h2>Cboe</h2>
@@ -62,14 +21,18 @@
                 <ul>
                     <li><a href="#" class="active"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
                     <li><a href="manage-users.html"><i class="fa-solid fa-tools"></i><span>Manage User</span></a></li>
-                    <li><a href="transaction.html"><i class="fa-solid fa-trend-up"></i><span>Transactions</span></a></li>
+                    <li><a href="wallet-settings.html"><i class="fa-solid fa-tools"></i><span>Manage Wallet</span></a>
+                    </li>
+                    <li><a href="transaction.html"><i class="fa-solid fa-trend-up"></i><span>Transactions</span></a>
+                    </li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
                 <button id="theme-toggle" class="sidebar-btn">
                     <i class="fas fa-moon"></i><span>Toggle Theme</span>
                 </button>
-                <button id="logout-btn" class="sidebar-btn profile-sidebar-btn"> <i class="fa-solid fa-sign-out-alt"></i><span>Logout</span>
+                <button id="logout-btn" class="sidebar-btn profile-sidebar-btn"> <i
+                        class="fa-solid fa-sign-out-alt"></i><span>Logout</span>
                 </button>
             </div>
         </aside>
@@ -83,18 +46,19 @@
                     <span class="company-name">Cboe Admin</span>
                 </div>
 
-                <div class="navbar-right"> <div id="nav-notification">
+                <div class="navbar-right">
+                    <div id="nav-notification">
                         <i class="fa-solid fa-bell"></i>
                     </div>
 
                     <div id="profile-dropdown" class="profile-container">
                         <div class="profile-info">
-                            <span class="user-name" id="admin-user-name">Welcome, Admin</span> 
+                            <span class="user-name" id="admin-user-name">Welcome, Admin</span>
                             <img src="https://via.placeholder.com/40" alt="avatar" class="profile-avatar">
                         </div>
                         <div class="dropdown-menu hidden">
                             <a href="#" id="dropdown-settings">Settings</a>
-                            <a href="#" id="dropdown-logout">Logout</a> 
+                            <a href="#" id="dropdown-logout">Logout</a>
                         </div>
                     </div>
                 </div>
@@ -132,18 +96,19 @@
                         <div class="card-icon"><i class="fas fa-tools"></i></div>
                         <div class="card-info">
                             <span class="card-title">Total Transactions</span>
-                            <span class="card-value" id="total-transactions">0</span> 
+                            <span class="card-value" id="total-transactions">0</span>
                         </div>
                     </div>
                 </section>
-                
+
                 <section class="recent-data-section">
-                     <div class="card flexible-card">
+                    <div class="card flexible-card">
                         <div class="card-icon"><i class="fas fa-list"></i></div>
                         <div class="card-info">
                             <span class="card-title">Recent Transactions</span>
                             <ul id="recent-transactions-list" class="recent-list">
-                                <li class="recent-list-item"><span class="card-value" id="recent-tx">Loading...</span></li>
+                                <li class="recent-list-item"><span class="card-value" id="recent-tx">Loading...</span>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -153,8 +118,8 @@
     </div>
 
     <div id="mobile-overlay" class="mobile-overlay hidden"></div>
-  <script type="module" src="../firebase-config.js"></script>
-  <script type="module" src="./assets/js/admin-dashboard.js"></script>
+    <script src="./assets/js/admin-dashboard.js"></script>
 
 </body>
+
 </html>

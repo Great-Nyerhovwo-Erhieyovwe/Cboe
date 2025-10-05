@@ -1,12 +1,25 @@
 {
-  "name": "cboe",
+  "name": "cboe-global-markets-backend",
   "version": "1.0.0",
-  "description": "Frontend project using JSON Server as backend",
+  "description": "SQL Backend for the Cboe Global Markets application.",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "init": "node db_init.js"
   },
-  "devDependencies": {
-    "json-server": "^0.17.3",
-    "express": "^4.18.2"
+  "keywords": [
+    "express",
+    "postgres",
+    "jwt",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^17.2.3",     
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
   }
 }

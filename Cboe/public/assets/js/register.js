@@ -1,13 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ✅ FIXED: Access Firebase from global scope (must be initialized in HTML)
-    const auth = window.auth;
-    const db = window.db;
-
-    if (!auth || !db) {
-        alert("Firebase not loaded. Check your HTML script tags.");
-        return;
-    }
+    // 🛑 REMOVED: const auth = window.auth; and const db = window.db; 
+    // These are no longer needed as database operations are server-side.
 
     // --- DOM Elements ---
     const form = document.getElementById('registrationForm');
@@ -44,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameFeedback = document.getElementById('usernameFeedback');
     const usernameSuggestions = document.getElementById('usernameSuggestions');
     const phoneFeedback = document.getElementById('phoneFeedback');
-    const strengthBar = document.getElementById('strengthBar'); // ✅ Ensure HTML has "strength-bar" (not "stength-bar")
+    const strengthBar = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
     const psi = document.querySelector('.password-strength-indicator');
 
@@ -117,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ✅ UPDATED: Username availability check now uses Fetch API to query the server
     const checkUsernameAvailability = async (username) => {
         clearError(usernameError);
         usernameSuggestions.innerHTML = '';
@@ -136,10 +131,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         usernameFeedback.textContent = 'Checking availability...';
         try {
-            const q = db.collection("users").where("username", "==", username);
-            const querySnapshot = await q.get();
+            // 🌐 Call the server endpoint to check username (Server handles the SQL query)
+            const response = await fetch('/api/check-username', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
 
-            if (querySnapshot.empty) {
+            const data = await response.json();
+
+            if (data.isAvailable) { // Server responds with { isAvailable: true }
                 usernameFeedback.textContent = 'Username available.';
                 usernameFeedback.classList.add('valid');
                 usernameInput.classList.add('valid');
@@ -149,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 usernameFeedback.textContent = 'Username taken.';
                 usernameInput.classList.add('invalid');
 
+                // Generate suggestions (still client-side for UX)
                 const base = username.replace(/\d+$/, '') || username;
                 const suggestions = [
                     base + Math.floor(100 + Math.random() * 900),
@@ -177,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Username check error:", error);
             displayError(usernameError, 'Error checking availability. Try again.');
+            usernameFeedback.textContent = '';
             return false;
         }
     };
@@ -201,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const phoneRegex = /^\+?[0-9]{7,15}$/;
         if (phone === '') {
             // Optional field, no error
+            phoneFeedback.textContent = '';
             return true;
         }
         if (!phoneRegex.test(phone)) {
@@ -325,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     usernameInput.addEventListener('input', () => {
         const value = usernameInput.value.trim();
         if (value.length > 0) {
+            // Add a small delay for debounce in a real app
             checkUsernameAvailability(value);
         } else {
             clearError(usernameError);
@@ -333,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ FORM SUBMISSION (with async safety)
+    // ✅ FORM SUBMISSION (updated to use FETCH to talk to the SQL server API)
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -365,56 +370,60 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Error already shown
         }
 
-        // Proceed with registration
-        const fullName = fullNameInput.value.trim();
-        const username = usernameInput.value.trim();
-        const email = emailInput.value.trim();
-        const phone = phoneInput.value.trim();
-        const password = passwordInput.value;
-        const accountType = accountTypeInput.value;
-        const country = countryInput.value;
-        const currency = currencyInput.value;
+        // --- Prepare Data for Server ---
+        const registrationData = {
+            fullName: fullNameInput.value.trim(),
+            username: usernameInput.value.trim(),
+            email: emailInput.value.trim(),
+            phone: phoneInput.value.trim(),
+            password: passwordInput.value, // Send plain password for server to hash
+            accountType: accountTypeInput.value,
+            country: countryInput.value,
+            currency: currencyInput.value,
+            // Only send confirmation of agreement, as server can't read checkbox state directly
+            agreedToTerms: termsCheckbox.checked, 
+            ageAgreed: agreeCheckbox.checked 
+        };
 
         showModal('Registering...', 'Creating your account...', false, true);
 
         try {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            const user = userCredential.user;
-
-            await user.updateProfile({ displayName: username });
-
-            await db.collection("users").doc(user.uid).set({
-                fullName: fullName,
-                username: username,
-                email: email,
-                phone: phone,
-                accountType: accountType,
-                country: country,
-                currency: currency,
-                balance: 0.00,
-                roi: 0.00,
-                deposits: 0.00,
-                activeTrades: 0,
-                isFrozen: false,
-                isBanned: false,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            // 🌐 Send data to server API endpoint
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(registrationData)
             });
 
-            showModal('Registration Successful', `Welcome, ${username}! Redirecting to login...`, false);
-            form.reset();
-            setTimeout(() => {
-                window.location.href = "../login/login.html";
-            }, 2000);
+            const result = await response.json();
+
+            if (response.ok) {
+                // HTTP 200-299 status code means success
+                showModal('Registration Successful', `Welcome, ${registrationData.username}! Redirecting to login...`, false);
+                form.reset();
+                setTimeout(() => {
+                    window.location.href = "../login/login.html";
+                }, 2000);
+            } else {
+                // Server responded with an error (e.g., 400 Bad Request, 500 Server Error)
+                let errorMessage = result.message || "An unexpected error occurred during registration.";
+
+                // Example: Handle specific server-side errors
+                if (result.errorType === 'EMAIL_TAKEN') {
+                    errorMessage = 'This email is already registered. Please log in.';
+                } else if (result.errorType === 'USERNAME_TAKEN') {
+                    errorMessage = 'This username is already registered.';
+                    // You might want to re-run suggestions here
+                }
+                
+                showModal('Registration Failed', errorMessage, true);
+            }
 
         } catch (error) {
-            console.error('Registration error:', error);
-            let errorMessage = "An unexpected error occurred.";
-            if (error.code === 'auth/email-already-in-use') {
-                errorMessage = 'This email is already registered. Please log in.';
-            } else if (error.code === 'auth/weak-password') {
-                errorMessage = 'Password is too weak.';
-            }
-            showModal('Registration Failed', errorMessage, true);
+            console.error('Network or Server error:', error);
+            showModal('Registration Failed', 'Could not connect to the server. Please check your internet connection and try again.', true);
         } finally {
             isSubmitting = false; // 🔓 Always reset
         }

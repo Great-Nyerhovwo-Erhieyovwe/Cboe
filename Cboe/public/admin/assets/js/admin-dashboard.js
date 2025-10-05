@@ -1,52 +1,22 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getFirestore,
-    collection,
-    doc,
-    updateDoc,
-    deleteDoc,
-    onSnapshot,
-    query,
-    where,
-    addDoc,
-    getDoc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// assets/js/admin-dashboard.js
+
+// --- Configuration ---
+// Base URL for your running backend server
+const API_BASE_URL = 'http://localhost:3000/api'; 
+const LOGIN_PAGE = "./admin-login.html"; 
+
+// --- Data Storage ---
+let users = [];
+let transactions = [];
+// Get the JWT token saved during successful admin login
+let jwtToken = localStorage.getItem('jwtToken'); 
 
 /* ===========================
-    CONFIG & CONSTANTS
-    =========================== */
-const firebaseConfig = {
-    apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-    authDomain: "cboefirebaseserver.firebaseapp.com",
-    projectId: "cboefirebaseserver",
-    storageBucket: "cboefirebaseserver.firebasestorage.app",
-    messagingSenderId: "755491003217",
-    appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
-};
-
-// CRITICAL PATH CHECK: Since dashboard.html and admin.html are in the same 'admin/' folder
-const LOGIN_PAGE = "./admin-login.html"; // CORRECT path for this folder structure
-const PUBLIC_USERS_COLLECTION = "users";
-const PUBLIC_TRANSACTIONS_COLLECTION = "transactions";
-const PUBLIC_MESSAGES_COLLECTION = "messages";
-const ADMINS_COLLECTION = "admins"; // Added for clarity
-
-/* ===========================
-    FIREBASE SERVICE REFERENCES
-    =========================== */
-let app = null;
-let db = null;
-let auth = null;
-
-/* ===========================
-    DOM refs (populated later)
+    DOM References & State
     =========================== */
 let usersTableBody = null;
 let transactionsTableBody = null;
 let messageContainer = null;
-
 let modalUserInfo = null;
 let messageText = null;
 let billingAmount = null;
@@ -54,12 +24,11 @@ let sendMessageBtn = null;
 let closeModalBtn = null;
 let modalStatus = null;
 let messageModal = null;
-
 let logoutBtn = null;
 let dropdownLogout = null;
-
 let listenersAttached = false;
 let selectedUserId = null;
+
 
 /* ===========================
     UTIL: ensure DOM ready
@@ -70,9 +39,8 @@ function domReady() {
 }
 
 /* ===========================
-    UI Helpers (omitted for brevity, assume content from original file)
+    UI Helpers: Modals and Messages
     =========================== */
-// ... (All UI Helper functions like ensureMessageContainer, showMessage, ensureConfirmationModal, showConfirmation)
 function ensureMessageContainer() {
     if (messageContainer) return;
     messageContainer = document.getElementById("message-container");
@@ -173,8 +141,9 @@ function injectModalsIfMissing() {
     }
 }
 
+
 /* ===========================
-    Query & store DOM refs
+    DOM Refs & Renderers
     =========================== */
 function cacheDomRefs() {
     usersTableBody = document.getElementById("users-table-body") || document.querySelector("#users-table tbody");
@@ -193,38 +162,35 @@ function cacheDomRefs() {
     dropdownLogout = document.getElementById("dropdown-logout");
 }
 
-/* ===========================
-    Renderers (omitted for brevity, assume content from original file)
-    =========================== */
-let users = [];
-let transactions = [];
 
 function renderUsers() {
     if (!usersTableBody) return;
     usersTableBody.innerHTML = "";
     users.forEach(user => {
         const tr = document.createElement("tr");
+        // Ensure 'id' is a string for substring
+        const userId = String(user.id); 
         const balanceNum = Number(user.balance) || 0;
-        const isBanned = user.isBanned === true;
-        const isFrozen = user.isFrozen === true;
+        const isBanned = user.is_banned === true; // Note: SQL column names often use snake_case
+        const isFrozen = user.is_frozen === true; // Note: SQL column names often use snake_case
         const statusText = isBanned ? "BANNED" : (isFrozen ? "FROZEN" : "Active");
         const statusColor = isBanned ? "red" : (isFrozen ? "orange" : "green");
 
         tr.innerHTML = `
-          <td><code title="ID: ${user.id}">${user.id.substring(0,8)}...</code></td>
+          <td><code title="ID: ${userId}">${userId.substring(0,8)}...</code></td>
           <td>${user.username || "N/A"}</td>
           <td>${user.email || ""}</td>
           <td>$${balanceNum.toFixed(2)}</td>
           <td>
-            <input id="balance-input-${user.id}" type="number" step="0.01" value="${balanceNum.toFixed(2)}" style="width:120px;padding:6px;border:1px solid #ddd;border-radius:6px" />
-            <button class="update-btn" data-userid="${user.id}" style="margin-left:8px;padding:6px 10px;border-radius:6px">Update</button>
+            <input id="balance-input-${userId}" type="number" step="0.01" value="${balanceNum.toFixed(2)}" style="width:120px;padding:6px;border:1px solid #ddd;border-radius:6px" />
+            <button class="update-btn" data-userid="${userId}" style="margin-left:8px;padding:6px 10px;border-radius:6px">Update</button>
           </td>
-          <td><button class="send-message-btn" data-userid="${user.id}" data-username="${(user.username || user.email || '')}" style="padding:6px 10px;border-radius:6px">Message/Bill</button></td>
+          <td><button class="send-message-btn" data-userid="${userId}" data-username="${(user.username || user.email || '')}" style="padding:6px 10px;border-radius:6px">Message/Bill</button></td>
           <td style="color:${statusColor};font-weight:700">${statusText}</td>
           <td>
-            <button class="action-btn" data-user-id="${user.id}" data-action="ban">${isBanned ? "Unban" : "Ban"}</button>
-            <button class="action-btn" data-user-id="${user.id}" data-action="freeze" style="margin-left:6px">${isFrozen ? "Unfreeze" : "Freeze"}</button>
-            <button class="action-btn" data-user-id="${user.id}" data-action="delete" style="margin-left:6px;background:#dc3545;color:#fff;border:none;padding:6px 8px;border-radius:6px">Delete</button>
+            <button class="action-btn" data-user-id="${userId}" data-action="ban">${isBanned ? "Unban" : "Ban"}</button>
+            <button class="action-btn" data-user-id="${userId}" data-action="freeze" style="margin-left:6px">${isFrozen ? "Unfreeze" : "Freeze"}</button>
+            <button class="action-btn" data-user-id="${userId}" data-action="delete" style="margin-left:6px;background:#dc3545;color:#fff;border:none;padding:6px 8px;border-radius:6px">Delete</button>
           </td>
         `;
         usersTableBody.appendChild(tr);
@@ -239,32 +205,127 @@ function renderTransactions() {
         return;
     }
 
-    transactions.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    // Sort transactions by creation time (most recent first) - Server should ideally do this
+    transactions.sort((a, b) => {
+        // Use 'created_at' for SQL data, which is a string timestamp
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+        return timeB - timeA;
+    });
 
     transactions.forEach(tx => {
-        const user = users.find(u => u.id === tx.userId);
+        const user = users.find(u => u.id === tx.user_id); // Note: SQL foreign key is often snake_case
+        const txId = String(tx.id);
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><code title="TX: ${tx.id}">${tx.id.substring(0,8)}...</code></td>
-          <td>${user ? (user.username || user.email) : (tx.username || "Unknown")}</td>
+          <td><code title="TX: ${txId}">${txId.substring(0,8)}...</code></td>
+          <td>${user ? (user.username || user.email) : "Unknown"}</td>
           <td style="text-transform:capitalize">${tx.type || ""}</td>
           <td>$${Number(tx.amount || 0).toFixed(2)}</td>
           <td>
-            <button class="approve-btn" data-txid="${tx.id}" style="padding:6px 10px;border-radius:6px">Approve</button>
-            <button class="reject-btn" data-txid="${tx.id}" style="margin-left:6px;padding:6px 10px;border-radius:6px">Reject</button>
+            <button class="approve-btn" data-txid="${txId}" style="padding:6px 10px;border-radius:6px">Approve</button>
+            <button class="reject-btn" data-txid="${txId}" style="margin-left:6px;padding:6px 10px;border-radius:6px">Reject</button>
           </td>
         `;
         transactionsTableBody.appendChild(tr);
     });
 }
 
+
 /* ===========================
-    Firestore data operations (omitted for brevity, assume content from original file)
+    API Service: Centralized Fetcher
     =========================== */
+
+/**
+ * Handles all secure API requests, attaching the JWT token.
+ */
+async function secureFetch(endpoint, options = {}) {
+    if (!jwtToken) {
+        console.error("No JWT token found. Redirecting to login.");
+        handleLogout();
+        throw new Error("Unauthorized");
+    }
+
+    let response;
+    try {
+        response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                // CRITICAL: Attach the JWT for authorization
+                'Authorization': `Bearer ${jwtToken}`, 
+                ...options.headers,
+            },
+        });
+    } catch (e) {
+        console.error("Network Error:", e);
+        throw new Error("Could not connect to the server.");
+    }
+
+    // Handle 401 Unauthorized globally (session expired or token invalid)
+    if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('jwtToken');
+        window.location.href = LOGIN_PAGE;
+        throw new Error("Session expired or unauthorized. Please log in again.");
+    }
+
+    // Attempt to parse JSON response
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (e) {
+        // This catches cases where the server returns non-JSON error or empty body
+        if (!response.ok) {
+            throw new Error(`Server returned HTTP ${response.status} but no details.`);
+        }
+        // If status is OK but no JSON, just return empty data
+        return {}; 
+    }
+    
+    if (!response.ok) {
+        throw new Error(data.message || `API Error: ${response.statusText} (${response.status})`);
+    }
+    return data;
+}
+
+/* ===========================
+    SQL Backend Data Operations (CRUD)
+    =========================== */
+
+// 1. Fetch Users
+async function fetchUsers() {
+    try {
+        const data = await secureFetch('/admin/users'); 
+        users = data.users || []; 
+        renderUsers();
+    } catch (err) {
+        console.error("fetchUsers error:", err);
+        showMessage("Failed to load users: " + err.message, "error");
+    }
+}
+
+// 2. Fetch Transactions (Pending)
+async function fetchTransactions() {
+    try {
+        const data = await secureFetch('/admin/transactions/pending'); 
+        transactions = data.transactions || []; 
+        renderTransactions();
+    } catch (err) {
+        console.error("fetchTransactions error:", err);
+        showMessage("Failed to load transactions: " + err.message, "error");
+    }
+}
+
+// 3. Update User Balance
 async function updateUserBalance(userId, newBalance) {
     try {
-        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
-        await updateDoc(userDocRef, { balance: parseFloat(Number(newBalance).toFixed(2)) });
+        const body = { balance: parseFloat(Number(newBalance).toFixed(2)) };
+        await secureFetch(`/admin/user/${userId}/balance`, {
+            method: 'PUT',
+            body: JSON.stringify(body)
+        });
+        
+        await fetchUsers(); 
         showMessage("Balance updated", "success");
     } catch (err) {
         console.error("updateUserBalance error:", err);
@@ -272,53 +333,32 @@ async function updateUserBalance(userId, newBalance) {
     }
 }
 
+// 4. Handle User Action (Ban, Freeze, Delete)
 async function handleUserAction(userId, action) {
-    const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, userId);
-    const user = users.find(u => u.id === userId);
-    if (!user) return showMessage("User not found locally", "error");
     try {
-        if (action === "ban") {
-            await updateDoc(userDocRef, { isBanned: !user.isBanned });
-            showMessage(`${user.username || user.email} ban toggled`, "success");
-        } else if (action === "freeze") {
-            await updateDoc(userDocRef, { isFrozen: !user.isFrozen });
-            showMessage(`${user.username || user.email} freeze toggled`, "success");
-        } else if (action === "delete") {
-            await deleteDoc(userDocRef);
-            showMessage(`${user.username || user.email} deleted`, "success");
-        } else {
-            showMessage("Unknown action", "error");
-        }
+        // Server will handle toggling the state (e.g., ban/unban)
+        await secureFetch(`/admin/user/${userId}/action`, {
+            method: 'POST',
+            body: JSON.stringify({ action: action }) 
+        });
+        
+        await fetchUsers(); 
+        showMessage(`User action '${action}' completed`, "success");
     } catch (err) {
         console.error("handleUserAction error:", err);
-        showMessage(`Failed: ${err.message}`, "error");
+        showMessage(`Failed to perform action: ${err.message}`, "error");
     }
 }
 
-async function approveTransaction(tx) {
+// 5. Approve Transaction
+async function approveTransaction(txId) {
     try {
-        const user = users.find(u => u.id === tx.userId);
-        if (!user) return showMessage("User not found for TX", "error");
-
-        const txAmount = Number(tx.amount) || 0;
-        let newBalance = Number(user.balance) || 0;
-        const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, tx.id);
-        const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, user.id);
-
-        if (tx.type === "deposit") {
-            newBalance += txAmount;
-        } else if (tx.type === "withdrawal") {
-            if (txAmount > newBalance) {
-                await updateDoc(txDocRef, { status: "rejected", processedAt: serverTimestamp() });
-                return showMessage("Insufficient balance — TX rejected", "error");
-            }
-            newBalance -= txAmount;
-        } else {
-            return showMessage("Unknown transaction type", "error");
-        }
-
-        await updateDoc(userDocRef, { balance: parseFloat(newBalance.toFixed(2)) });
-        await updateDoc(txDocRef, { status: "approved", processedAt: serverTimestamp() });
+        await secureFetch(`/admin/transaction/${txId}/approve`, {
+            method: 'POST'
+        });
+        
+        await fetchTransactions(); 
+        await fetchUsers(); 
         showMessage("Transaction approved", "success");
     } catch (err) {
         console.error("approveTransaction error:", err);
@@ -326,10 +366,14 @@ async function approveTransaction(tx) {
     }
 }
 
+// 6. Reject Transaction
 async function rejectTransaction(txId) {
     try {
-        const txDocRef = doc(db, PUBLIC_TRANSACTIONS_COLLECTION, txId);
-        await updateDoc(txDocRef, { status: "rejected", processedAt: serverTimestamp() });
+        await secureFetch(`/admin/transaction/${txId}/reject`, {
+            method: 'POST'
+        });
+        
+        await fetchTransactions(); 
         showMessage("Transaction rejected", "success");
     } catch (err) {
         console.error("rejectTransaction error:", err);
@@ -337,8 +381,33 @@ async function rejectTransaction(txId) {
     }
 }
 
+// 7. Send Message / Bill User
+async function sendAdminAction(userId, message, billingAmount) {
+     try {
+        const body = { 
+            message: message, 
+            billingAmount: billingAmount 
+        };
+        
+        await secureFetch(`/admin/user/${userId}/send-action`, {
+            method: 'POST',
+            body: JSON.stringify(body)
+        });
+        
+        if (billingAmount > 0) {
+             await fetchUsers(); 
+        }
+        return true;
+    } catch (err) {
+        console.error("sendAdminAction error:", err);
+        showMessage(`Error: ${err.message}`, "error");
+        return false;
+    }
+}
+
+
 /* ===========================
-    Event wiring (omitted for brevity, assume content from original file)
+    Event Wiring
     =========================== */
 function attachTableListeners() {
     if (listenersAttached) return;
@@ -388,9 +457,9 @@ function attachTableListeners() {
             const rejectBtn = e.target.closest(".reject-btn");
             if (approveBtn) {
                 const txId = approveBtn.dataset.txid;
-                const tx = transactions.find(t => t.id === txId);
+                const tx = transactions.find(t => String(t.id) === txId);
                 if (!tx) return showMessage("Transaction not found locally", "error");
-                showConfirmation("Approve transaction", `Approve TX ${txId.substring(0,8)}...?`, (ok) => { if (ok) approveTransaction(tx); });
+                showConfirmation("Approve transaction", `Approve TX ${txId.substring(0,8)}...?`, (ok) => { if (ok) approveTransaction(txId); });
             }
             if (rejectBtn) {
                 const txId = rejectBtn.dataset.txid;
@@ -400,6 +469,8 @@ function attachTableListeners() {
     }
 
     if (closeModalBtn) closeModalBtn.addEventListener("click", () => { if (messageModal) messageModal.style.display = "none"; });
+    
+    // NEW: Send Message/Bill button logic updated to use API fetch
     if (sendMessageBtn) sendMessageBtn.addEventListener("click", async () => {
         if (!selectedUserId) return showMessage("No user selected", "error");
         const msg = (messageText?.value || "").trim();
@@ -412,175 +483,92 @@ function attachTableListeners() {
 
         if (modalStatus) { modalStatus.textContent = "Processing…"; modalStatus.style.color = "black"; }
 
-        try {
-            if (!isNaN(billing) && billing > 0) {
-                const user = users.find(u => u.id === selectedUserId);
-                if (!user) throw new Error("Target user data missing");
-                const userDocRef = doc(db, PUBLIC_USERS_COLLECTION, selectedUserId);
-                const newBalance = (Number(user.balance) || 0) - billing;
-                await updateDoc(userDocRef, { balance: parseFloat(newBalance.toFixed(2)) });
-                await addDoc(collection(db, PUBLIC_TRANSACTIONS_COLLECTION), {
-                    userId: selectedUserId,
-                    type: "billing",
-                    amount: billing,
-                    status: "completed",
-                    note: `Admin billed`,
-                    createdAt: serverTimestamp(),
-                    processedAt: serverTimestamp(),
-                    username: user.username || user.email
-                });
-            }
-
-            if (msg) {
-                await addDoc(collection(db, PUBLIC_MESSAGES_COLLECTION), {
-                    userId: selectedUserId,
-                    sender: "Admin",
-                    message: msg,
-                    read: false,
-                    type: "notification",
-                    timestamp: serverTimestamp()
-                });
-            }
-
+        const success = await sendAdminAction(selectedUserId, msg, billing);
+            
+        if (success) {
             if (modalStatus) { modalStatus.textContent = "Action completed"; modalStatus.style.color = "green"; }
-            setTimeout(() => { if (messageModal) messageModal.style.display = "none"; if (modalStatus) modalStatus.textContent = ""; }, 900);
-        } catch (err) {
-            console.error("sendMessage error:", err);
-            if (modalStatus) { modalStatus.textContent = `Error: ${err.message}`; modalStatus.style.color = "red"; }
+            setTimeout(() => { 
+                if (messageModal) messageModal.style.display = "none"; 
+                if (modalStatus) modalStatus.textContent = ""; 
+            }, 900);
+        } else {
+             // Error status is set inside sendAdminAction
         }
     });
 
-    if (logoutBtn) logoutBtn.addEventListener("click", async (e) => { e.preventDefault(); await signOut(auth); });
-    if (dropdownLogout) dropdownLogout.addEventListener("click", async (e) => { e.preventDefault(); await signOut(auth); });
+    // NEW: Logout handlers
+    if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
+    if (dropdownLogout) dropdownLogout.addEventListener("click", handleLogout);
 }
 
-/* ===========================
-    Firestore listeners (omitted for brevity, assume content from original file)
-    =========================== */
-let usersUnsub = null;
-let txUnsub = null;
+// Utility function to decode JWT payload (for displaying user email/id)
+function parseJwt (token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
 
-function setupUsersListener() {
-    if (!db) return;
-    const usersRef = collection(db, PUBLIC_USERS_COLLECTION);
-    if (usersUnsub) usersUnsub();
-    usersUnsub = onSnapshot(usersRef, snapshot => {
-        users = [];
-        snapshot.forEach(d => users.push({ id: d.id, ...d.data() }));
-        renderUsers();
-    }, err => {
-        console.error("users onSnapshot error:", err);
-        showMessage("Failed to load users", "error");
-    });
-}
-
-function setupTransactionsListener() {
-    if (!db) return;
-    const txRef = collection(db, PUBLIC_TRANSACTIONS_COLLECTION);
-    const q = query(txRef, where("status", "==", "pending"));
-    if (txUnsub) txUnsub();
-    txUnsub = onSnapshot(q, snapshot => {
-        transactions = [];
-        snapshot.forEach(d => transactions.push({ id: d.id, ...d.data() }));
-        renderTransactions();
-    }, err => {
-        console.error("transactions onSnapshot error:", err);
-        showMessage("Failed to load transactions", "error");
-    });
-}
-
-/* ===========================
-    Auth & Admin security check
-    =========================== */
-
-// TEMPORARY FUNCTION: BYPASSES FIRESTORE CHECK FOR TROUBLESHOOTING
-async function checkIfAdmin(user) {
-    if (!user) return false;
-    
-    // LOGIC BYPASS: We assume any logged-in user is an admin for this test.
-    console.log("TEMPORARY BYPASS ACTIVE: Firestore authorization check skipped.");
-    return true; 
-}
-
-
-function setupAuthListener() {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      try {
-        const allowed = await checkIfAdmin(user);
-
-        if (!allowed) {
-          console.warn("❌ User logged in but not an admin.");
-
-          // Show error message instead of looping redirects
-          document.getElementById("content").innerHTML = `
-            <div style="color: red; padding: 20px; text-align:center;">
-              <h2>Access Denied</h2>
-              <p>You are not authorized to access the admin dashboard.</p>
-              <button id="logoutBtn">Logout</button>
-            </div>
-          `;
-
-          // Attach logout handler
-          const logoutBtn = document.getElementById("logoutBtn");
-          if (logoutBtn) {
-            logoutBtn.addEventListener("click", async () => {
-              await signOut(auth);
-              window.location.href = LOGIN_PAGE; // e.g. "admin.html"
-            });
-          }
-
-          return; // stop here (no redirect loop)
-        }
-
-        // ✅ Admin confirmed
-        console.log("✅ Authorization success: Admin confirmed");
-        setupUsersListener();
-        setupTransactionsListener();
-        attachTableListeners();
-
-        const adminNameEl = document.getElementById("admin-user-name");
-        if (adminNameEl) {
-          adminNameEl.textContent = `Welcome, Admin (${user.email})`;
-        }
-      } catch (error) {
-        console.error("🔥 Error checking admin role:", error);
-
-        // Fallback if Firestore check fails
-        document.getElementById("content").innerHTML = `
-          <div style="color: red; padding: 20px; text-align:center;">
-            <h2>System Error</h2>
-            <p>Could not verify admin privileges. Please try again later.</p>
-          </div>
-        `;
-      }
-    } else {
-      console.log("❌ No user logged in. Redirecting to login.");
-      window.location.href = LOGIN_PAGE; // e.g. "admin.html"
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
     }
-  });
 }
 
+// Function to handle logout
+function handleLogout() {
+    // Clear JWT and redirect
+    localStorage.removeItem('jwtToken');
+    jwtToken = null; // Clear local variable too
+    window.location.href = LOGIN_PAGE;
+}
+
+
 /* ===========================
-    INIT: initialize firebase, DOM refs, listeners
+    INIT: Entry Point
     =========================== */
+
+function checkAuthAndLoadData() {
+    // 1. Check for JWT
+    if (!jwtToken) {
+        console.log("❌ No JWT token found. Redirecting to login.");
+        window.location.href = LOGIN_PAGE;
+        return;
+    }
+
+    // 2. Decode the token to get user info (client-side only)
+    const tokenPayload = parseJwt(jwtToken);
+
+    // Assuming the server puts an 'isAdmin' flag or role in the token payload
+    if (!tokenPayload || tokenPayload.role !== 'admin') { 
+        console.warn("❌ Token found but user is not an admin.");
+        handleLogout(); // Force logout if not admin
+        return;
+    }
+
+    // ✅ Admin confirmed - Start loading data
+    console.log("✅ Authorization success: Admin confirmed");
+    
+    // Start data fetching loop (or simply fetch once/interval)
+    fetchUsers();
+    fetchTransactions();
+    
+    // Display admin information
+    const adminNameEl = document.getElementById("admin-user-name");
+    if (adminNameEl) {
+      adminNameEl.textContent = `Welcome, Admin (${tokenPayload.email || tokenPayload.userId})`;
+    }
+}
+
 async function init() {
     await domReady();
-
-    if (getApps().length > 0) {
-        app = getApp();
-    } else {
-        app = initializeApp(firebaseConfig);
-    }
-    db = getFirestore(app);
-    auth = getAuth(app);
-
     injectModalsIfMissing();
     cacheDomRefs();
     ensureMessageContainer();
     ensureConfirmationModal();
-
-    setupAuthListener();
+    attachTableListeners();
+    checkAuthAndLoadData();
 }
 
 init();

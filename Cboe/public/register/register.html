@@ -6,38 +6,13 @@
   <title>Register</title>
   <link rel="stylesheet" href="../assets/css/register.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-
-  <!-- ✅ GLOBAL FIREBASE SDK (MUST USE THESE EXACT VERSIONS) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  
-  <script>
-    // ✅ PASTE YOUR ACTUAL CONFIG FROM FIREBASE CONSOLE
-    const firebaseConfig = {
-      apiKey: "AIzaSyBTGdLyfpv9xzmh5hYoctay0Ev4W4lpAjM",
-      authDomain: "cboefirebaseserver.firebaseapp.com",
-      projectId: "cboefirebaseserver",
-      storageBucket: "cboefirebaseserver.firebasestorage.app",
-      messagingSenderId: "755491003217",
-      appId: "1:755491003217:web:2a10ffad1f38c9942f5170"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
     
-    // Make globally available
-    window.auth = firebase.auth();
-    window.db = firebase.firestore();
-    
-    console.log("Firebase initialized successfully");
-  </script>
-</head>
+  </head>
 
 <body>
     <div class="container">
         <h2>Create your account</h2>
-        <form action="" id="registrationForm">
+        <form action="/api/register" method="POST" id="registrationForm"> 
             <div class="form-group">
                 <label for="fullName">Full Name:</label>
                 <input type="text" id="fullName" name="fullName" placeholder="Enter your full name">
@@ -48,7 +23,6 @@
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="off" required>
                 <small id="usernameFeedback" class="feedback"></small>
-                <!-- ✅ FIXED: Added missing class for suggestions -->
                 <ul id="usernameSuggestions" class="suggestion-list"></ul>
                 <div class="error-message" id="usernameError"></div>
             </div>
@@ -100,9 +74,9 @@
             </div>
 
             <div class="form-group">
-                <label for="currency">Currency:</label> <!-- ✅ FIXED: Added 'for' attribute -->
+                <label for="currency">Currency:</label>
                 <select id="currency" name="currency" required>
-                    <option value="" disabled selected>-- Choose Currency --</option> <!-- ✅ FIXED: Empty value -->
+                    <option value="" disabled selected>-- Choose Currency --</option>
                     <option value="USD">USD - US Dollar</option>
                     <option value="EUR">EUR - Euro</option>
                     <option value="GBP">GBP - British Pound</option>
@@ -114,7 +88,7 @@
                     <option value="RUB">RUB - Russian Ruble</option>
                     <option value="ZAR">ZAR - South African Rand</option>
                     <option value="INR">INR - Indian Rupee</option>
-                    <option value="MXN">MXN - Mexican Peso</option> <!-- ✅ FIXED: Typo "Mexicon" -->
+                    <option value="MXN">MXN - Mexican Peso</option>
                     <option value="PHP">PHP - Philippine Peso</option>
                     <option value="KZT">KZT - Kazakhstan Tenge</option>
                     <option value="Others">Others</option>
@@ -124,10 +98,7 @@
             <div class="form-group">
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password">
-                <!-- ✅ FIXED: Removed toggle icons (not used in JS) OR keep if needed -->
-                <!-- <i id="togglePwd" class="toggle-eye fa-regular fa-eye" data-target="password"></i> -->
                 <div class="error-message" id="passwordError"></div>
-                <!-- ✅ FIXED: Corrected typo "stength-bar" → "strength-bar" -->
                 <div class="password-strength-indicator">
                     <div class="strength-bar" id="strengthBar"></div>
                     <span id="strengthText"></span>
@@ -137,7 +108,6 @@
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password:</label>
                 <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
-                <!-- <i id="toggleConfirmPwd" class="toggle-eye fa-regular fa-eye" data-target="confirmPassword"></i> -->
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
 
@@ -158,7 +128,6 @@
             <p id="have-account">Already have an account? <a href="../login/login.html">Login</a></p>
         </form>
 
-        <!-- Modal -->
         <div id="modal" class="modal">
             <div class="modal-content">
                 <span id="closeModal" class="close">&times;</span>
@@ -171,7 +140,6 @@
     </div>
 
 
-    <!-- ✅ LOAD REGISTER.JS AS GLOBAL SCRIPT (NOT MODULE) -->
     <script src="../assets/js/register.js"></script>
 </body>
 </html>
