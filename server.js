@@ -7,6 +7,7 @@ const express = require('express');
 const path = require('path');
 const { Pool } = require('pg'); // PostgreSQL client
 const jwt = require('jsonwebtoken');
+const cors = require('cors'); // <--- 🌟 FIX 1: ADD CORS MODULE
 
 const app = express();
 
@@ -25,10 +26,6 @@ if (!DATABASE_URL) {
     process.exit(1);
 }
 
-// if (!JWT_SECRET || JWT_SECRET.includes("26816b64b74bc02ef1f8e2e821970032913f0a8ef135ea5eeca44d8179d818b91eb44a4dfdaf26a5d83f6f0667bdd41b764631bd12658d079f58465f0f0c1f03")) {
-//     console.error("FATAL ERROR: JWT_SECRET is not set or is using the placeholder value.");
-//     process.exit(1);
-// }
 const MIN_SECRET_LENGTH = 32;
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < MIN_SECRET_LENGTH) {
@@ -69,51 +66,77 @@ app.db = pool;
 // Parse JSON request bodies (required for login/transaction submissions)
 app.use(express.json());
 
+// 🌟 FIX 2: ADD CORS MIDDLEWARE
+// You MUST install this package first: npm install cors
+const allowedOrigins = [
+    'https://cboebackendapi.onrender.com', // Your own API URL (sometimes needed)
+    'http://localhost:3000',               // Local dev server
+    'http://127.0.0.1:5500',               // Common VS Code Live Server
+    // 🔑 ADD THE URL WHERE YOUR FRONTEND IS HOSTED (e.g., GitHub Pages, Netlify)
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, or same-origin on production)
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        // If the origin is not in the allowed list, but you want to test locally:
+        // if (origin.includes('127.0.0.1') || origin.includes('localhost')) {
+        //     return callback(null, true); 
+        // }
+        // For production, the else case should strictly deny
+        console.warn(`CORS BLOCK: Attempted access from disallowed origin: ${origin}`);
+        return callback(null, false);
+    },
+    credentials: true // Crucial for sending/receiving session cookies or authorization headers
+}));
+
+
 // -----------------------------------------------------
 // 5. JWT Authentication Middleware
 // -----------------------------------------------------
-
-// Middleware to verify JWT and attach user data (userId, etc.) to the request
+// ... (Your authenticateToken function is correct)
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Expects 'Bearer TOKEN'
 
     if (token == null) {
+        // When client code uses fetch and gets a 401, it should redirect to login
         return res.status(401).json({ message: 'Authentication required.' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
-            // Log this error to help diagnose expired/bad tokens
             console.warn('JWT verification failed:', err.message);
+            // Use 403 Forbidden for an invalid/expired token
             return res.status(403).json({ message: 'Invalid or expired session. Please log in again.' });
         }
-        req.user = user; // The user object contains the payload (e.g., { id: 123, email: '...' })
+        req.user = user;
         next();
     });
 };
 
 
 // -----------------------------------------------------
-// 6. API Routes (Replacing JSON Server)
+// 6. API Routes
 // -----------------------------------------------------
 
-// You need to create these files in a 'routes' folder:
-// - authRoutes.js: Handles POST /api/login and POST /api/forgot-password
-// - userRoutes.js: Handles GET /api/user/profile (protected)
-// - transactionRoutes.js: Handles POST /api/transactions/deposit and GET /api/transactions/latest (protected)
-
-// Unprotected routes (e.g., login, password reset)
+// Unprotected routes (e.g., register, login, password reset)
 app.use('/api', require('./routes/authRoutes'));
+
+// 🌟 FIX 3: Add the wallet config route. It's usually UNPROTECTED.
+// Your frontend fetches this immediately on load.
+app.use('/api/config', require('./routes/configRoutes')); 
+
 
 // Protected routes (require a valid JWT)
 app.use('/api/user', authenticateToken, require('./routes/userRoutes'));
 app.use('/api/transactions', authenticateToken, require('./routes/transactionRoutes'));
-// app.use('/api/config', require('./routes/configRoutes')); // Wallet config is often unprotected or protected by API Key
 
 
 // -----------------------------------------------------
-// 7. Frontend Serving (Keeping Your Original JSON Server Logic)
+// 7. Frontend Serving
 // -----------------------------------------------------
 
 const FRONTEND_PATH = path.join(__dirname, 'Cboe', 'public');
@@ -122,8 +145,6 @@ const FRONTEND_PATH = path.join(__dirname, 'Cboe', 'public');
 app.use(express.static(FRONTEND_PATH));
 
 // Catch-all route for serving the main entry point if the requested URL isn't a file or API route
-// NOTE: For multi-page apps (like yours: login.html, dashboard.html), this is often omitted,
-// as the static middleware handles direct requests. However, keeping this fallback is common.
 app.get('*', (req, res) => {
     // Attempt to send index.html if no static file was found
     res.sendFile(path.join(FRONTEND_PATH, 'index.html'));
