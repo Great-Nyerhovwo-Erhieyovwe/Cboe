@@ -56,7 +56,8 @@ pool.connect((err, client, release) => {
 });
 
 // Attach the pool to the app object for use in routes
-app.db = pool;
+// app.db = pool;
+module.exports = { app, pool };
 
 
 // -----------------------------------------------------
@@ -127,7 +128,7 @@ app.use('/api', require('./routes/authRoutes'));
 
 // 🌟 FIX 3: Add the wallet config route. It's usually UNPROTECTED.
 // Your frontend fetches this immediately on load.
-app.use('/api/config', require('./routes/configRoutes')); 
+// app.use('/api/config', require('./routes/configRoutes')); 
 
 
 // Protected routes (require a valid JWT)
