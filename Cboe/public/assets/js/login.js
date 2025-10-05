@@ -1,5 +1,7 @@
 // login.js — GLOBAL SCOPE (SQL BACKEND)
 document.addEventListener('DOMContentLoaded', () => {
+    // 🌐 API Configuration: YOUR NEW DEPLOYED URL
+    const API_BASE_URL = 'https://cboebackendapi.onrender.com';
     // 🛑 REMOVED: All references to window.auth and window.db as database operations are now server-side.
     
     // Get DOM elements
@@ -67,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showModal('Sending...', 'Requesting password reset link...', false, true);
             
-            // 🌐 NEW: Call server endpoint for password reset email (Server handles email sending and verification logic)
+            // 🌐 UPDATED: Call server endpoint using the deployed API_BASE_URL
             try {
-                const response = await fetch('/api/forgot-password', {
+                const response = await fetch(`${API_BASE_URL}/api/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -84,8 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     showModal('Error', msg, true);
                 }
             } catch (error) {
+                // 💥 CHANGE HERE: Replaced generic network error message with a specific login failure message
                 console.error('Password reset error:', error);
-                showModal('Error', 'Could not connect to the server for password reset.', true);
+                showModal('Error', 'Password reset failed. Please confirm the email address and try again.', true);
             }
         });
     }
@@ -113,9 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showModal('Logging In...', 'Verifying credentials...', false, true);
 
-            // 🌐 NEW: Call server endpoint for login (Server handles SQL query, password check, and session creation)
+            // 🌐 UPDATED: Call server endpoint using the deployed API_BASE_URL
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch(`${API_BASE_URL}/api/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -148,8 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } catch (error) {
+                // 💥 CHANGE HERE: Replaced generic network error message with a specific login failure message
                 console.error('Network or Server error:', error);
-                showModal('Login Failed', 'Could not connect to the server. Please check your internet connection.', true);
+                showModal('Login Failed', 'Login failed. Please check your credentials and try again.', true);
             } finally {
                 isSubmitting = false; // 🔓 Always reset
             }
