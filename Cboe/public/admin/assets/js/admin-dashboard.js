@@ -2,7 +2,7 @@
 
 // --- Configuration ---
 // Base URL for your running backend server
-const API_BASE_URL = 'http://localhost:3000/api'; 
+const API_BASE_URL = 'https://cboebackendapi.onrender.com/api'; 
 const LOGIN_PAGE = "./admin-login.html"; 
 
 // --- Data Storage ---
