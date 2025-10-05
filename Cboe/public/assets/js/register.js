@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // 🌐 API Configuration: YOUR NEW DEPLOYED URL
+    const API_BASE_URL = 'https://cboebackendapi.onrender.com';
+
     // --- DOM Elements ---
     const form = document.getElementById('registrationForm');
     const fullNameInput = document.getElementById('fullName');
@@ -348,8 +351,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showModal('Registering...', 'Creating your account...', false, true);
 
         try {
-            // 🌐 Send data to server API endpoint
-            const response = await fetch('/api/register', {
+            // 🌐 UPDATED: Send data to server API endpoint using the deployed URL
+            const response = await fetch(`${API_BASE_URL}/api/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -370,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Server responded with an error (e.g., 400, 409, 500)
                 let errorMessage = result.message || "An unexpected error occurred during registration.";
 
-                // 🔑 NEW: Handle specific server-side errors
+                // 🔑 Handle specific server-side errors
                 if (result.errorType === 'EMAIL_TAKEN') {
                     errorMessage = 'This email is already registered. Please log in.';
                     displayError(emailError, errorMessage);
@@ -385,7 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Network or Server error:', error);
-            showModal('Registration Failed', 'Could not connect to the server. Please check your internet connection and try again.', true);
+            // Changed the default generic message to be more general since a network error can hide a failed server startup.
+            showModal('Registration Failed', 'Could not complete registration. Check your connection or try again later.', true);
         } finally {
             isSubmitting = false; // 🔓 Always reset
         }
