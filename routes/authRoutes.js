@@ -1,3 +1,5 @@
+// routes/authRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -17,13 +19,11 @@ const STARTING_DEPOSITS_COUNT = 0;
 // POST /api/register - Register a new user
 // ----------------------------------------------------------------------
 router.post('/register', async (req, res) => {
-    // Collect all data sent from the frontend registration form
     const { 
         fullName, username, email, phone, password, 
         accountType, country, currency, agreedToTerms, ageAgreed 
     } = req.body;
 
-    // Basic server-side validation
     if (!email || !password || !username || !fullName || !agreedToTerms || !ageAgreed) {
         return res.status(400).json({ message: 'Missing required registration fields.' });
     }
@@ -48,13 +48,13 @@ router.post('/register', async (req, res) => {
 
         // 2. Hash the password
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const passwordHash = await bcrypt.hash(password, salt); // This variable is named correctly (camelCase)
 
         // 3. Insert the new user into the database
-        // FIX: CHANGED 'full_name' to 'fullName' to match the database schema name from the error log.
+        // FIX: CHANGED 'password_hash' to 'passwordHash' to match the database schema name from the error log.
         const insertQuery = `
             INSERT INTO users (
-                fullName, username, email, password_hash, phone, 
+                fullName, username, email, passwordHash, phone, 
                 account_type, country, currency, agreed_to_terms, age_agreed,
                 balance, roi, active_trades, deposits_count
             )
@@ -99,7 +99,8 @@ router.post('/login', async (req, res) => {
 
     try {
         // 1. Find user by email
-        const userQuery = 'SELECT id, email, password_hash, username FROM users WHERE email = $1';
+        // FIX: CHANGED 'password_hash' to 'passwordHash' here too for consistency
+        const userQuery = 'SELECT id, email, passwordHash, username FROM users WHERE email = $1';
         const result = await pool.query(userQuery, [email]);
         const user = result.rows[0];
 
@@ -108,7 +109,7 @@ router.post('/login', async (req, res) => {
         }
 
         // 2. Compare the provided password with the hashed password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(password, user.passwordHash);
 
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials.' });
