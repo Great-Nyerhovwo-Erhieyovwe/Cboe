@@ -1,14 +1,18 @@
 // routes/transactionRoutes.js
+
 const express = require('express');
 const router = express.Router();
-// The main application pool is available via app.db
-const pool = require('../server').db; 
+
+// ✅ FIX: Import the pool directly from the dedicated db.js file.
+// This resolves the 'db' property circular dependency warning.
+const pool = require('../db.js'); 
 
 // ----------------------------------------------------------------------
 // POST /api/transactions/deposit - Submit a new deposit request (PROTECTED)
 // ----------------------------------------------------------------------
 router.post('/deposit', async (req, res) => {
-    const userId = req.user.id;
+    // req.user is set by the authenticateToken middleware in server.js
+    const userId = req.user.id; 
     const { amount, coin, network } = req.body;
     const type = 'deposit';
     
