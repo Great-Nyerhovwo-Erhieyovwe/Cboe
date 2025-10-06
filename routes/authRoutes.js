@@ -1,5 +1,3 @@
-// routes/authRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -53,10 +51,10 @@ router.post('/register', async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         // 3. Insert the new user into the database
-        // FIX: Added balance, roi, active_trades, and deposits_count to satisfy DB NOT NULL constraints
+        // FIX: CHANGED 'full_name' to 'fullName' to match the database schema name from the error log.
         const insertQuery = `
             INSERT INTO users (
-                full_name, username, email, password_hash, phone, 
+                fullName, username, email, password_hash, phone, 
                 account_type, country, currency, agreed_to_terms, age_agreed,
                 balance, roi, active_trades, deposits_count
             )
