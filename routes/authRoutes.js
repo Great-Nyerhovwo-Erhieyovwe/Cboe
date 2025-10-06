@@ -1,61 +1,103 @@
-// routes/authRoutes.js
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// server.js - SQL BACKEND MAIN ENTRY POINT
 
-// The main application pool is available via app.db when required in server.js
-const { pool } = require('../server.js');
+// 1. Load Environment Variables 
+require('dotenv').config();
+
+const express = require('express');
+// REMOVED: const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+const cors = require('cors'); 
+
+const app = express();
+
+// -----------------------------------------------------
+// 2. Configuration & Initialization
+// -----------------------------------------------------
+
+const PORT = process.env.PORT || 3000;
+// REMOVED: DATABASE_URL is now checked in db.js
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ----------------------------------------------------------------------
-// POST /api/login - Authenticate a user and issue a JWT
-// ----------------------------------------------------------------------
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+const MIN_SECRET_LENGTH = 32;
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < MIN_SECRET_LENGTH) {
+    console.error("FATAL ERROR: JWT_SECRET is missing or too short. Check your .env file.");
+    process.exit(1);
+}
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required.' });
+// -----------------------------------------------------
+// 3. Database Connection Pool (REMOVED - Now in db.js)
+// -----------------------------------------------------
+
+
+// -----------------------------------------------------
+// 4. Middleware Setup
+// -----------------------------------------------------
+
+app.use(express.json());
+
+// CORS Configuration
+const allowedOrigins = [
+    'http://localhost:3000',               
+    'http://127.0.0.1:5500',               
+    'https://cboebackendapi.onrender.com', 
+    // ADD YOUR PRODUCTION FRONTEND URL HERE
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        console.warn(`CORS BLOCK: Attempted access from disallowed origin: ${origin}`);
+        return callback(null, false);
+    },
+    credentials: true
+}));
+
+
+// -----------------------------------------------------
+// 5. JWT Authentication Middleware
+// -----------------------------------------------------
+// ... (Your authenticateToken function remains unchanged)
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; 
+
+    if (token == null) {
+        return res.status(401).json({ message: 'Authentication required.' });
     }
 
-    try {
-        // 1. Find user by email
-        const userQuery = 'SELECT id, email, password_hash, username FROM users WHERE email = $1';
-        const result = await pool.query(userQuery, [email]);
-        const user = result.rows[0];
-
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid or expired session. Please log in again.' });
         }
+        req.user = user; 
+        next();
+    });
+};
 
-        // 2. Compare the provided password with the hashed password
-        const isMatch = await bcrypt.compare(password, user.password_hash);
 
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
-        }
+// -----------------------------------------------------
+// 6. API Routes
+// -----------------------------------------------------
 
-        // 3. Credentials are valid, create JWT payload
-        const payload = { 
-            id: user.id, 
-            email: user.email,
-            username: user.username
-        };
-        
-        // Sign the token (expires in 24 hours)
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+// Unprotected routes (e.g., register, login)
+app.use('/api', require('./routes/authRoutes'));
 
-        // 4. Send the token back to the client
-        res.json({ 
-            message: 'Login successful', 
-            token: token,
-            userId: user.id
-        });
+// Protected routes (require a valid JWT)
+app.use('/api/user', authenticateToken, require('./routes/userRoutes'));
+app.use('/api/transactions', authenticateToken, require('./routes/transactionRoutes'));
+// app.use('/api/config', require('./routes/configRoutes')); 
 
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Server error during login.' });
-    }
+
+// -----------------------------------------------------
+// 7. Server Startup
+// -----------------------------------------------------
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}.`);
+    console.log(`🔒 SQL-backed API endpoints available at /api/...`);
 });
 
-module.exports = router;
+// FIX: Export ONLY the app, eliminating any possibility of a circular dependency error.
+module.exports = app;
