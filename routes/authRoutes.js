@@ -1,5 +1,3 @@
-// routes/authRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -8,6 +6,7 @@ const jwt = require('jsonwebtoken');
 // FIX: Import the pool directly from the new, dedicated db.js file.
 const pool = require('../db.js'); 
 const JWT_SECRET = process.env.JWT_SECRET; // JWT_SECRET is accessed via environment
+const STARTING_BALANCE = 0.00; // Define a starting balance for new users
 
 // ----------------------------------------------------------------------
 // POST /api/register - Register a new user
@@ -19,7 +18,7 @@ router.post('/register', async (req, res) => {
         accountType, country, currency, agreedToTerms, ageAgreed 
     } = req.body;
 
-    // Basic server-side validation (Client-side also validates, but server must confirm)
+    // Basic server-side validation
     if (!email || !password || !username || !fullName || !agreedToTerms || !ageAgreed) {
         return res.status(400).json({ message: 'Missing required registration fields.' });
     }
@@ -31,40 +30,39 @@ router.post('/register', async (req, res) => {
 
     try {
         // 1. Check for existing email or username (Concurrency check)
-        const checkQuery = 'SELECT id FROM users WHERE email = $1 OR username = $2';
+        // We select the actual email/username rows to properly identify the conflict
+        const checkQuery = 'SELECT email, username FROM users WHERE email = $1 OR username = $2';
         const checkResult = await pool.query(checkQuery, [email, username]);
 
         if (checkResult.rows.length > 0) {
-            const existingUser = checkResult.rows[0];
-            const isEmailConflict = existingUser.email === email; // Note: You'd need to select email/username in checkQuery to do this accurately
-            
-            // For simplicity, we just check which one was the conflict
-            if (checkResult.rows.find(row => row.email === email)) {
+            // Check for specific conflicts to return a helpful error
+            if (checkResult.rows.some(row => row.email === email)) {
                 return res.status(409).json({ message: 'Email already registered.', errorType: 'EMAIL_TAKEN' });
             }
-            if (checkResult.rows.find(row => row.username === username)) {
+            if (checkResult.rows.some(row => row.username === username)) {
                 return res.status(409).json({ message: 'Username already taken.', errorType: 'USERNAME_TAKEN' });
             }
-            // For a robust check, the checkQuery should select the username and email to compare
         }
-
 
         // 2. Hash the password
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
         // 3. Insert the new user into the database
+        // FIX: Added 'balance' to the column list and '$11' to the values list to satisfy DB NOT NULL constraints
         const insertQuery = `
             INSERT INTO users (
                 full_name, username, email, password_hash, phone, 
-                account_type, country, currency, agreed_to_terms, age_agreed
+                account_type, country, currency, agreed_to_terms, age_agreed,
+                balance 
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING id, username, email;`;
 
         const values = [
             fullName, username, email, passwordHash, phone || null, 
-            accountType, country, currency, agreedToTerms, ageAgreed
+            accountType, country, currency, agreedToTerms, ageAgreed,
+            STARTING_BALANCE // Providing the mandatory starting balance (0.00)
         ];
         
         const result = await pool.query(insertQuery, values);
@@ -78,17 +76,17 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Registration error:', error);
+        // Log the actual database error to the server console for debugging
+        console.error('Registration database error:', error); 
         res.status(500).json({ message: 'Server error during registration.' });
     }
 });
 
 
 // ----------------------------------------------------------------------
-// POST /api/login - Authenticate a user and issue a JWT (Login route is below Register)
+// POST /api/login - Authenticate a user and issue a JWT
 // ----------------------------------------------------------------------
 router.post('/login', async (req, res) => {
-    // ... (Your existing login code remains here) ...
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -134,6 +132,5 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Server error during login.' });
     }
 });
-
 
 module.exports = router;
