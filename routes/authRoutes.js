@@ -48,14 +48,14 @@ router.post('/register', async (req, res) => {
 
         // 2. Hash the password
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt); // This variable is named correctly (camelCase)
+        const passwordHash = await bcrypt.hash(password, salt);
 
         // 3. Insert the new user into the database
-        // FIX: CHANGED 'password_hash' to 'passwordHash' to match the database schema name from the error log.
+        // FIX: Reverted to 'full_name' and used quotes on all camelCase/mixedCase columns that caused errors
         const insertQuery = `
             INSERT INTO users (
-                fullName, username, email, passwordHash, phone, 
-                account_type, country, currency, agreed_to_terms, age_agreed,
+                "full_name", username, email, "passwordHash", phone, 
+                "account_type", country, currency, "agreed_to_terms", "age_agreed",
                 balance, roi, active_trades, deposits_count
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
@@ -99,8 +99,8 @@ router.post('/login', async (req, res) => {
 
     try {
         // 1. Find user by email
-        // FIX: CHANGED 'password_hash' to 'passwordHash' here too for consistency
-        const userQuery = 'SELECT id, email, passwordHash, username FROM users WHERE email = $1';
+        // FIX: Using "passwordHash" with quotes in the SELECT query as well
+        const userQuery = 'SELECT id, email, "passwordHash", username FROM users WHERE email = $1';
         const result = await pool.query(userQuery, [email]);
         const user = result.rows[0];
 
@@ -109,6 +109,7 @@ router.post('/login', async (req, res) => {
         }
 
         // 2. Compare the provided password with the hashed password
+        // Note: The object key returned will be "passwordHash" if you used quotes in the SELECT
         const isMatch = await bcrypt.compare(password, user.passwordHash);
 
         if (!isMatch) {
