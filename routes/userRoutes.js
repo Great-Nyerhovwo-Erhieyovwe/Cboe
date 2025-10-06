@@ -1,8 +1,11 @@
 // routes/userRoutes.js
+
 const express = require('express');
 const router = express.Router();
-// The main application pool is available via app.db
-const pool = require('../server').db; 
+
+// ✅ FIX: Import the pool directly from the dedicated db.js file.
+// This resolves the 'db' property circular dependency warning (like the one seen in image_668e68.jpg).
+const pool = require('../db.js'); 
 
 // ----------------------------------------------------------------------
 // GET /api/user/profile - Fetch user's dashboard stats (PROTECTED)
