@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 
 // The main application pool is available via app.db when required in server.js
 // const pool = require('../server.js').db; 
-const { pool } = require('../server.js')
+const { pool } = require('../server.js');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ----------------------------------------------------------------------
